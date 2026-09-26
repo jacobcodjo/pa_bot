@@ -1,6 +1,6 @@
 from config import CANDLE_COUNT
-from sessions import get_active_sessions, get_active_symbols
-from data_client import get_many_candles
+from sessions import get_active_sessions, get_active_symbols, is_forex_market_open
+from data_client import get_many_candles, is_forex_or_gold
 import strategy as impulse_strategy
 import crt_strategy
 from notifier import send_telegram_message, format_setup_message
@@ -23,9 +23,17 @@ def run():
         print("Aucune killzone active à cette heure -- pas de scan ce passage.")
         return
 
-    active_symbols = get_active_symbols()  # {symbol: [sessions]}
+    forex_open = is_forex_market_open()
+    active_symbols = get_active_symbols()  # {symbol: [sessions]} -- forex/or déjà exclu si marché fermé
     symbols = list(active_symbols.keys())
-    print(f"Killzone(s) active(s) : {', '.join(active_sessions)} -- {len(symbols)} symbole(s) à scanner.")
+    print(
+        f"Killzone(s) active(s) : {', '.join(active_sessions)} -- {len(symbols)} symbole(s) à scanner"
+        + ("" if forex_open else " (forex/or fermé -- week-end, crypto uniquement).")
+    )
+
+    if not symbols:
+        print("Aucun symbole à scanner ce passage (forex fermé et aucune crypto sur cette killzone).")
+        return
 
     state = load_state()
     stats = load_stats()
@@ -37,8 +45,13 @@ def run():
     # active à cet instant (ex: un setup asiatique encore en attente pendant
     # la session de Londres) -- on ajoute leur seul trigger_tf pour pouvoir
     # les résoudre à chaque passage, sans lancer une analyse complète dessus.
+    # Les trades forex/or en attente sont ignorés tant que le marché est
+    # fermé (rien ne peut de toute façon avoir bougé) pour ne pas gaspiller
+    # de quota API le week-end.
     existing = {(s, tf) for s, tf, _ in specs}
     for trade in stats["pending"].values():
+        if not forex_open and is_forex_or_gold(trade["symbol"]):
+            continue
         key = (trade["symbol"], trade["trigger_tf"])
         if key not in existing:
             specs.append((trade["symbol"], trade["trigger_tf"], CANDLE_COUNT))

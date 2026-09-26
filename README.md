@@ -27,6 +27,16 @@ laquelle des deux l'a déclenchée :
    rejets rencontrés avec l'ancien bot Deriv), et pas besoin d'en garder une
    ouverte puisque le bot tourne par cron toutes les 15 min.
 
+### Fermeture du week-end (forex/or)
+
+Le forex et l'or ferment du vendredi ~22h00 UTC au dimanche ~22h00 UTC
+(`sessions.is_forex_market_open`). Pendant cette période, ces symboles sont
+automatiquement exclus du scan -- même si une fenêtre de killzone tombe
+techniquement sur un samedi ou dimanche (les killzones sont définies par
+heure de la journée, sans notion de jour de la semaine). La crypto continue
+de tourner normalement, 24/7. Ça évite de gaspiller du quota Twelve Data à
+re-télécharger des bougies figées sur un marché fermé.
+
 ### Limite du palier gratuit Twelve Data et cache
 
 Le palier gratuit Twelve Data est limité à **800 requêtes/jour (8/minute)**.
