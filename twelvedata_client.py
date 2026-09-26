@@ -5,15 +5,31 @@ simple email, sans compte de trading ni vérification d'identité, et sans
 restriction de pays -- utilisable depuis n'importe où, y compris les pays
 non couverts par OANDA.
 
-Palier gratuit : 800 requêtes/jour, 8/minute -- voir data_client.py pour le
-cache qui limite le nombre d'appels réels.
+Palier gratuit : 800 requêtes/jour, 8/MINUTE -- cette dernière limite est
+stricte (429 "Too Many Requests" au moindre dépassement), donc chaque appel
+attend ici le temps nécessaire pour ne jamais dépasser 8 requêtes par
+fenêtre de 60 secondes, peu importe le nombre de symboles à scanner.
 """
 
+import time
 from datetime import datetime, timezone
 
 import requests
 
 from config import TWELVEDATA_API_KEY, TWELVEDATA_BASE_URL, TWELVEDATA_INTERVAL
+
+MAX_REQUESTS_PER_MINUTE = 8
+MIN_INTERVAL_SECONDS = 60 / MAX_REQUESTS_PER_MINUTE + 0.5  # marge de sécurité
+
+_last_request_at = 0.0
+
+
+def _throttle():
+    global _last_request_at
+    elapsed = time.monotonic() - _last_request_at
+    if elapsed < MIN_INTERVAL_SECONDS:
+        time.sleep(MIN_INTERVAL_SECONDS - elapsed)
+    _last_request_at = time.monotonic()
 
 
 def _to_api_symbol(symbol: str) -> str:
@@ -38,6 +54,7 @@ def get_candles(symbol: str, tf: str, count: int, timeout: int = 20):
         "timezone": "UTC",
         "apikey": TWELVEDATA_API_KEY,
     }
+    _throttle()
     response = requests.get(f"{TWELVEDATA_BASE_URL}/time_series", params=params, timeout=timeout)
     response.raise_for_status()
     data = response.json()

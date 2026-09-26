@@ -8,13 +8,13 @@ import os
 #                restriction de pays). Palier gratuit : 800 requêtes/jour,
 #                8/minute -- voir data_client.py pour le cache qui respecte
 #                cette limite.
-# Crypto      -> Binance REST API publique (endpoint klines), sans clé.
+# Crypto      -> Kraken REST API publique (endpoint OHLC), sans clé.
 # ============================================================================
 
 TWELVEDATA_API_KEY = os.environ.get("TWELVEDATA_API_KEY")
 TWELVEDATA_BASE_URL = "https://api.twelvedata.com"
 
-BINANCE_BASE_URL = "https://api.binance.com/api/v3"
+KRAKEN_BASE_URL = "https://api.kraken.com/0/public"
 
 # --- Telegram ---
 TELEGRAM_BOT_TOKEN = os.environ.get("PA_TELEGRAM_BOT_TOKEN")
@@ -24,7 +24,7 @@ TELEGRAM_CHAT_ID = os.environ.get("PA_TELEGRAM_CHAT_ID")
 # Symboles
 # ----------------------------------------------------------------------------
 # Convention : un symbole contenant "_" est un instrument OANDA (forex/or),
-# un symbole sans "_" est une paire Binance (crypto). C'est ce qui permet à
+# un symbole sans "_" est une paire Kraken (crypto). C'est ce qui permet à
 # data_client.py de savoir vers quelle API router chaque requête.
 # ============================================================================
 
@@ -87,7 +87,7 @@ SESSION_SYMBOLS = {
 # --- Granularités : mêmes clés internes, converties par chaque client API ---
 GRANULARITY = {"D1": "D1", "H4": "H4", "H1": "H1", "M15": "M15"}
 TWELVEDATA_INTERVAL = {"D1": "1day", "H4": "4h", "H1": "1h", "M15": "15min"}
-BINANCE_INTERVAL = {"D1": "1d", "H4": "4h", "H1": "1h", "M15": "15m"}
+KRAKEN_INTERVAL = {"D1": 1440, "H4": 240, "H1": 60, "M15": 15}  # en minutes
 
 # --- Cache de bougies (candle_cache.py) : évite de re-télécharger une bougie
 # tant que sa période n'est pas révolue -- indispensable pour rester sous les

@@ -1,13 +1,13 @@
 """
-Couche unique au-dessus de twelvedata_client et binance_client. Un symbole
+Couche unique au-dessus de twelvedata_client et kraken_client. Un symbole
 contenant "_" (ex: EUR_USD, XAU_USD) est routé vers Twelve Data ; un symbole
-sans "_" (ex: BTCUSDT) est routé vers Binance.
+sans "_" (ex: BTCUSDT) est routé vers Kraken.
 
 Inclut un cache disque (candle_cache.json) : une bougie n'est re-téléchargée
 que si sa période est révolue (ex: une H4 n'est refetchée qu'après 4h). Ceci
 est indispensable pour rester sous le palier gratuit Twelve Data (800
-requêtes/jour) -- sans ce cache, scanner ~4 timeframes x plusieurs dizaines
-de symboles toutes les 15 min dépasserait largement ce quota.
+requêtes/jour, 8/minute) -- sans ce cache, scanner ~4 timeframes x plusieurs
+dizaines de symboles toutes les 15 min dépasserait largement ce quota.
 """
 
 import json
@@ -15,7 +15,7 @@ import os
 import time
 
 import twelvedata_client
-import binance_client
+import kraken_client
 from config import CACHE_TTL_SECONDS, CANDLE_CACHE_FILE
 
 
@@ -47,7 +47,7 @@ def _is_fresh(entry: dict, tf: str, now: float) -> bool:
 
 
 def _fetch_one(symbol: str, tf: str, count: int, max_retries: int = 3, retry_delay: int = 5):
-    client = twelvedata_client if is_forex_or_gold(symbol) else binance_client
+    client = twelvedata_client if is_forex_or_gold(symbol) else kraken_client
     last_error = None
     for attempt in range(1, max_retries + 1):
         try:
@@ -56,7 +56,12 @@ def _fetch_one(symbol: str, tf: str, count: int, max_retries: int = 3, retry_del
             last_error = e
             print(f"[{symbol}/{tf}] Erreur (tentative {attempt}/{max_retries}) : {e}")
             if attempt < max_retries:
-                time.sleep(retry_delay)
+                # Un 429 (quota dépassé) a besoin de bien plus qu'un court
+                # délai fixe pour se résorber -- le throttle interne de
+                # twelvedata_client devrait déjà l'empêcher, mais on se
+                # protège quand même ici en cas de dérive.
+                wait = 60 if "429" in str(e) else retry_delay
+                time.sleep(wait)
     return last_error
 
 
@@ -94,7 +99,9 @@ def get_many_candles(specs, pause_seconds: float = 0.2):
         results[(symbol, tf)] = result
         cache[key] = {"fetched_at": now, "candles": result}
         cache_dirty = True
-        time.sleep(pause_seconds)  # ménage l'API (évite un éventuel rate-limit)
+        # Twelve Data se régule déjà lui-même (8s entre appels) ; pour Kraken,
+        # ~1s entre appels est le délai recommandé pour l'endpoint OHLC public.
+        time.sleep(pause_seconds if is_forex_or_gold(symbol) else max(pause_seconds, 1.0))
 
     if cache_dirty:
         save_cache(cache)

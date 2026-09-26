@@ -21,7 +21,12 @@ laquelle des deux l'a déclenchée :
    pas). Twelve Data n'est qu'un **fournisseur de données de marché** :
    inscription par simple email sur twelvedata.com, sans compte de trading
    ni vérification d'identité, utilisable depuis n'importe où.
-2. **Crypto : Binance** (API publique, sans clé).
+2. **Crypto : Kraken** (API publique, sans clé). Pas Binance : l'API publique
+   de Binance renvoie une erreur 451 depuis les adresses IP des datacenters
+   cloud américains (Azure/AWS) -- exactement l'infrastructure des runners
+   GitHub Actions. Ce n'est pas un problème de quota, Binance bloque la
+   connexion à la source ; aucune retentative n'y change rien. Kraken
+   n'applique pas ce type de restriction.
 3. **Plus de websocket.** Chaque bougie est récupérée par une simple requête
    HTTP -- pas de connexion persistante à travers Cloudflare (source des
    rejets rencontrés avec l'ancien bot Deriv), et pas besoin d'en garder une
@@ -39,15 +44,21 @@ re-télécharger des bougies figées sur un marché fermé.
 
 ### Limite du palier gratuit Twelve Data et cache
 
-Le palier gratuit Twelve Data est limité à **800 requêtes/jour (8/minute)**.
-Pour rester dans cette limite, `data_client.py` garde un **cache disque**
+Le palier gratuit Twelve Data est limité à **800 requêtes/jour ET 8/minute**.
+Cette seconde limite est stricte : au moindre dépassement, l'API répond par
+une erreur 429 ("Too Many Requests"). `twelvedata_client.py` espace donc
+chaque requête d'environ 8 secondes en interne, quel que soit le nombre de
+symboles à scanner -- un premier scan à froid (cache vide, ~14 paires forex x
+4 timeframes) peut ainsi prendre plusieurs minutes, c'est normal et attendu.
+En plus de ça, `data_client.py` garde un **cache disque**
 (`candle_cache.json`) : une bougie n'est re-téléchargée que lorsque sa
 période est révolue (une H4 n'est refetchée qu'après 4h, une D1 qu'après
-24h, etc.) -- seule la M15 est vraiment retéléchargée à chaque passage.
-Si le quota venait quand même à être dépassé un jour très chargé, le bot
-retombe automatiquement sur le cache existant (même expiré) plutôt que
-d'échouer. Si besoin de plus de marge, le palier payant Twelve Data (à
-partir de ~12 $/mois) lève cette limite.
+24h, etc.) -- seule la M15 est vraiment retéléchargée à chaque passage, ce
+qui rend les scans suivants bien plus rapides. Si le quota venait quand même
+à être dépassé un jour très chargé, le bot retombe automatiquement sur le
+cache existant (même expiré) plutôt que d'échouer. Si besoin de plus de
+marge, le palier payant Twelve Data (à partir de ~66 $/mois) lève la limite
+par minute.
 
 ## Filtre killzones, avec fuseau horaire automatique
 
@@ -135,8 +146,8 @@ aucun appel API et se termine immédiatement.
 
 - `config.py` -- symboles, killzones, paramètres des deux stratégies
 - `sessions.py` -- détection de la killzone active (fuseau auto) et des symboles associés
-- `twelvedata_client.py` / `binance_client.py` -- récupération des bougies
-- `data_client.py` -- routage Twelve Data/Binance selon le symbole + cache disque
+- `twelvedata_client.py` / `kraken_client.py` -- récupération des bougies
+- `data_client.py` -- routage Twelve Data/Kraken selon le symbole + cache disque
 - `common.py` -- primitives partagées (swings, tendance, gaps de weekend)
 - `strategy.py` -- stratégie Impulse (tendance + jambe impulsive + Fibonacci)
 - `crt_strategy.py` -- stratégie CRT (range + sweep + FVG/Order Block)
