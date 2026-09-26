@@ -1,0 +1,41 @@
+name: Price Action Bot - Scan
+
+on:
+  schedule:
+    - cron: "*/15 * * * *"
+  repository_dispatch:
+    types: [external-cron]
+  workflow_dispatch: {}
+
+concurrency:
+  group: pa-bot-scan
+  cancel-in-progress: false
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Installer les dépendances
+        run: pip install -r requirements.txt
+
+      - name: Lancer le scan
+        env:
+          TWELVEDATA_API_KEY: ${{ secrets.TWELVEDATA_API_KEY }}
+          PA_TELEGRAM_BOT_TOKEN: ${{ secrets.PA_TELEGRAM_BOT_TOKEN }}
+          PA_TELEGRAM_CHAT_ID: ${{ secrets.PA_TELEGRAM_CHAT_ID }}
+        run: python main.py
+
+      - name: Sauvegarder l'état (state.json, trade_stats.json, candle_cache.json)
+        run: |
+          git config user.name "pa-bot"
+          git config user.email "pa-bot@users.noreply.github.com"
+          git add state.json trade_stats.json candle_cache.json 2>/dev/null || true
+          git diff --quiet --cached || git commit -m "Mise à jour de l'état [skip ci]"
+          git pull --rebase --autostash || true
+          git push || true
