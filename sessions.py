@@ -12,7 +12,7 @@ changent d'heure.
 from datetime import datetime, timezone
 from zoneinfo import ZoneInfo
 
-from config import SESSION_WINDOWS, SESSION_SYMBOLS, DISPLAY_TZ
+from config import SESSION_WINDOWS, SESSION_SYMBOLS, ALWAYS_ON_SYMBOLS, DISPLAY_TZ
 from data_client import is_forex_or_gold
 
 
@@ -62,7 +62,8 @@ def get_active_symbols(now_utc: datetime = None) -> dict:
     """
     Retourne {symbol: [sessions actives qui le concernent]} pour l'instant
     présent. Les symboles forex/or sont exclus quand ce marché est fermé
-    (week-end) -- la crypto reste incluse normalement.
+    (week-end). Les symboles "toujours actifs" (crypto) sont inclus à chaque
+    passage, indépendamment de toute killzone -- ils tradent 24/7.
     """
     active = get_active_sessions(now_utc)
     forex_open = is_forex_market_open(now_utc)
@@ -73,6 +74,10 @@ def get_active_symbols(now_utc: datetime = None) -> dict:
             if not forex_open and is_forex_or_gold(symbol):
                 continue
             symbols.setdefault(symbol, []).append(session)
+
+    for symbol in ALWAYS_ON_SYMBOLS:
+        symbols.setdefault(symbol, []).append("24/7")
+
     return symbols
 
 

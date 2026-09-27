@@ -3,6 +3,7 @@ from sessions import get_active_sessions, get_active_symbols, is_forex_market_op
 from data_client import get_many_candles, is_forex_or_gold
 import strategy as impulse_strategy
 import crt_strategy
+import weekly_outlook
 from notifier import send_telegram_message, format_setup_message
 from state_manager import load_state, save_state, is_new_setup, mark_setup_sent, prune_state
 from trade_tracker import (
@@ -19,20 +20,33 @@ def build_specs(symbols):
 
 def run():
     active_sessions = get_active_sessions()
-    if not active_sessions:
-        print("Aucune killzone active à cette heure -- pas de scan ce passage.")
-        return
-
     forex_open = is_forex_market_open()
-    active_symbols = get_active_symbols()  # {symbol: [sessions]} -- forex/or déjà exclu si marché fermé
+
+    if weekly_outlook.should_send():
+        try:
+            weekly_outlook.build_and_send()
+        except Exception as e:
+            print(f"Echec de l'outlook hebdomadaire : {e}")
+
+    if weekly_outlook.should_send_crypto_refresh():
+        try:
+            weekly_outlook.build_and_send_crypto_refresh()
+        except Exception as e:
+            print(f"Echec du rafraîchissement crypto du dimanche : {e}")
+
+    active_symbols = get_active_symbols()  # {symbol: [sessions]} -- inclut la crypto 24/7 + forex/or si killzone/marché ouverts
     symbols = list(active_symbols.keys())
-    print(
-        f"Killzone(s) active(s) : {', '.join(active_sessions)} -- {len(symbols)} symbole(s) à scanner"
-        + ("" if forex_open else " (forex/or fermé -- week-end, crypto uniquement).")
-    )
+
+    if active_sessions:
+        print(
+            f"Killzone(s) forex active(s) : {', '.join(active_sessions)} -- {len(symbols)} symbole(s) à scanner"
+            + ("" if forex_open else " (forex/or fermé -- week-end, crypto uniquement).")
+        )
+    else:
+        print(f"Aucune killzone forex active à cette heure -- {len(symbols)} symbole(s) à scanner (crypto 24/7).")
 
     if not symbols:
-        print("Aucun symbole à scanner ce passage (forex fermé et aucune crypto sur cette killzone).")
+        print("Aucun symbole à scanner ce passage.")
         return
 
     state = load_state()

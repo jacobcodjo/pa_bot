@@ -30,7 +30,64 @@ laquelle des deux l'a déclenchée :
 3. **Plus de websocket.** Chaque bougie est récupérée par une simple requête
    HTTP -- pas de connexion persistante à travers Cloudflare (source des
    rejets rencontrés avec l'ancien bot Deriv), et pas besoin d'en garder une
-   ouverte puisque le bot tourne par cron toutes les 15 min.
+   ouverte puisque le bot tourne par cron toutes les 5 min.
+
+### Fréquence du scan (5 minutes)
+
+Le bot tourne toutes les 5 minutes. Ça n'augmente pas la charge sur Twelve
+Data : le cache est basé sur la durée réelle de chaque bougie (une M15 reste
+valide 15 minutes, peu importe combien de fois le script tourne entre-temps),
+donc le nombre réel d'appels API par jour reste quasiment identique à un
+scan moins fréquent -- seul le délai de détection d'un nouveau setup est
+réduit (jusqu'à 5 min au lieu de 15). Le facteur qui aurait pu limiter cette
+fréquence est le quota de minutes GitHub Actions (2000 min/mois gratuites
+sur un dépôt privé) -- sur un **dépôt public**, ces minutes sont illimitées
+et gratuites, donc aucune contrainte de ce côté.
+
+### Outlook hebdomadaire (week-end)
+
+Pendant la fermeture du forex (voir ci-dessus), le bot envoie **une seule
+fois par week-end** un message récapitulatif du biais directionnel de fond
+pour chaque actif -- forex/or (dernière clôture connue avant la fermeture)
+et crypto (qui continue de trader normalement) :
+
+```
+📅 Outlook de la semaine — 09:00 (UTC+1)
+
+Forex
+EUR/USD : 🟢 Haussier (D1) / 🟢 Haussier (W1)
+GBP/USD : 🔴 Baissier (D1) / ⚪ Range (W1)
+...
+
+Or
+XAU/USD : 🟢 Haussier (D1) / 🟢 Haussier (W1)
+
+Crypto
+BTCUSDT : 🟢 Haussier (D1) / ⚪ Range (W1)
+...
+```
+
+Ce n'est pas une troisième stratégie de trading : c'est une lecture de la
+tendance de fond (même logique que celle utilisée par Impulse et CRT en
+interne), sans setup d'entrée/sortie associé -- juste un repère pour préparer
+la semaine à venir. Envoyé dès la fermeture du vendredi soir, avec un
+marqueur (`weekly_outlook_state.json`) qui empêche tout renvoi le reste du
+week-end.
+
+**Rafraîchissement crypto du dimanche.** Contrairement au forex qui reste
+figé sur la même clôture jusqu'à lundi, la crypto continue de trader tout le
+week-end -- la lecture du vendredi soir devient donc de moins en moins
+pertinente pour elle au fil du week-end. Un second message, crypto
+uniquement, est donc envoyé le dimanche à partir de 20h00 UTC (avant la
+réouverture du forex ~22h00 UTC), avec son propre marqueur pour ne pas se
+répéter :
+
+```
+🔄 Mise à jour crypto (dimanche) — 21:00 (UTC+1)
+
+BTCUSDT : 🟢 Haussier (D1) / ⚪ Range (W1)
+...
+```
 
 ### Fermeture du week-end (forex/or)
 
@@ -60,19 +117,24 @@ cache existant (même expiré) plutôt que d'échouer. Si besoin de plus de
 marge, le palier payant Twelve Data (à partir de ~66 $/mois) lève la limite
 par minute.
 
-## Filtre killzones, avec fuseau horaire automatique
+## Filtre killzones (forex/or), avec fuseau horaire automatique
 
-Le bot ne scanne que les symboles pertinents pour la session actuellement
-active (voir `sessions.py` / `config.py`) :
+Le forex/or n'est scanné que pendant la session actuellement active (voir
+`sessions.py` / `config.py`) :
 
 | Killzone   | Fenêtre (heure locale)            | Symboles                        |
 |------------|-------------------------------------|----------------------------------|
 | Asiatique  | 09h00 - 13h00 (Asia/Tokyo)           | Paires JPY, AUD, NZD            |
-| Londres    | 08h00 - 11h00 (Europe/London)        | EUR, GBP, CHF, or, BTC/ETH      |
-| New York   | 08h00 - 11h00 (America/New_York)     | Paires USD majeures, or, crypto |
+| Londres    | 08h00 - 11h00 (Europe/London)        | EUR, GBP, CHF, or                |
+| New York   | 08h00 - 11h00 (America/New_York)     | Paires USD majeures, or          |
 
-Chaque fenêtre est définie dans le fuseau **local** de sa propre place
-financière (via le module `zoneinfo` de Python), pas en UTC+1 fixe : le
+**La crypto (BTC, ETH, LTC, XRP) n'est pas soumise aux killzones** : elle
+trade 24/7, elle est donc scannée à chaque passage, quelle que soit l'heure
+(`ALWAYS_ON_SYMBOLS` dans `config.py`) -- les alertes crypto affichent "24/7"
+au lieu du nom d'une session.
+
+Chaque fenêtre killzone est définie dans le fuseau **local** de sa propre
+place financière (via le module `zoneinfo` de Python), pas en UTC+1 fixe : le
 changement d'heure (DST) de Londres et New York est donc géré
 **automatiquement**, sans aucun réglage à refaire quand l'Europe ou les
 Etats-Unis basculent heure d'été/hiver (à des dates différentes l'une de
@@ -114,7 +176,7 @@ déclencher le scan depuis un service de cron externe.
    settings -> Personal access tokens -> Fine-grained tokens** -> génère-en
    un avec accès en écriture (`Contents` + `Actions`) sur ce dépôt
    uniquement.
-2. Sur cron-job.org, crée une tâche toutes les 15 minutes qui envoie une
+2. Sur cron-job.org, crée une tâche toutes les 5 minutes qui envoie une
    requête **POST** vers :
    ```
    https://api.github.com/repos/<utilisateur>/<depot>/dispatches
@@ -154,6 +216,7 @@ aucun appel API et se termine immédiatement.
 - `state_manager.py` -- anti-doublon des alertes déjà envoyées (par stratégie)
 - `trade_tracker.py` -- suivi des trades (remplissage, TP/SL, statistiques par stratégie et classe d'actif)
 - `notifier.py` -- formatage (avec nom de la stratégie) et envoi des messages Telegram
+- `weekly_outlook.py` -- outlook hebdomadaire (biais D1/W1), envoyé une fois par week-end
 - `main.py` -- point d'entrée, lance les deux stratégies sur chaque symbole actif
 
 Cette logique est une implémentation simplifiée -- à backtester/affiner

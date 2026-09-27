@@ -7,7 +7,7 @@ Inclut un cache disque (candle_cache.json) : une bougie n'est re-téléchargée
 que si sa période est révolue (ex: une H4 n'est refetchée qu'après 4h). Ceci
 est indispensable pour rester sous le palier gratuit Twelve Data (800
 requêtes/jour, 8/minute) -- sans ce cache, scanner ~4 timeframes x plusieurs
-dizaines de symboles toutes les 15 min dépasserait largement ce quota.
+dizaines de symboles à chaque scan dépasserait largement ce quota.
 """
 
 import json

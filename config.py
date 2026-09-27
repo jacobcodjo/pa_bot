@@ -76,13 +76,17 @@ SESSION_SYMBOLS = {
     "london": [
         "EUR_USD", "GBP_USD", "EUR_GBP", "EUR_CHF", "GBP_CHF",
         "EUR_AUD", "EUR_CAD", "EUR_NZD", "GBP_AUD", "GBP_CAD", "GBP_NZD",
-        "XAU_USD", "BTCUSDT", "ETHUSDT",
+        "XAU_USD",
     ],
     "new_york": [
-        "EUR_USD", "GBP_USD", "USD_CHF", "USD_CAD", "USD_JPY",
-        "XAU_USD", "BTCUSDT", "ETHUSDT", "LTCUSDT", "XRPUSDT",
+        "EUR_USD", "GBP_USD", "USD_CHF", "USD_CAD", "USD_JPY", "CAD_CHF",
+        "XAU_USD",
     ],
 }
+
+# La crypto trade 24/7 -- contrairement au forex/or, elle n'est pas limitée
+# aux killzones et est donc scannée à chaque passage, quelle que soit l'heure.
+ALWAYS_ON_SYMBOLS = CRYPTOS
 
 # --- Granularités : mêmes clés internes, converties par chaque client API ---
 GRANULARITY = {"D1": "D1", "H4": "H4", "H1": "H1", "M15": "M15"}
@@ -95,6 +99,10 @@ KRAKEN_INTERVAL = {"D1": 1440, "H4": 240, "H1": 60, "M15": 15}  # en minutes
 # valeur = durée de validité du cache en secondes (= durée d'une bougie).
 CACHE_TTL_SECONDS = {"D1": 86400, "H4": 14400, "H1": 3600, "M15": 900}
 CANDLE_CACHE_FILE = "candle_cache.json"
+
+# --- Outlook hebdomadaire (week-end) : biais directionnel D1/W1 par actif,
+# envoyé une seule fois par week-end (marqueur pour éviter les doublons). ---
+WEEKLY_OUTLOOK_FILE = "weekly_outlook_state.json"
 
 # --- Cascade à 3 niveaux, stratégie Impulse (tendance -> zone Fibo -> trigger) ---
 TIMEFRAME_CASCADE_IMPULSE = {
