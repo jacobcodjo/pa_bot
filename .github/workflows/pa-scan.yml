@@ -2,11 +2,21 @@ name: Price Action Bot - Scan
 
 on:
   schedule:
-    - cron: "*/15 * * * *"
+    # Filet de sécurité seulement -- le cron natif GitHub Actions est connu
+    # pour être peu fiable (retards fréquents aux heures de forte charge).
+    # Le déclenchement principal se fait via cron-job.org + repository_dispatch
+    # ci-dessous (voir README.md pour la configuration).
+    - cron: "*/5 * * * *"
   repository_dispatch:
     types: [external-cron]
   workflow_dispatch: {}
 
+# Avec deux sources de déclenchement (schedule + cron-job.org), deux
+# exécutions pourraient se chevaucher. Sans cette protection, elles liraient
+# le même state.json de départ et l'une écraserait le commit de l'autre en
+# le poussant sur git -- risque de perdre une mise à jour, voire de renvoyer
+# deux fois la même alerte. "cancel-in-progress: false" les met en file
+# d'attente au lieu de les annuler, pour ne rater aucun scan.
 concurrency:
   group: pa-bot-scan
   cancel-in-progress: false
@@ -31,11 +41,11 @@ jobs:
           PA_TELEGRAM_CHAT_ID: ${{ secrets.PA_TELEGRAM_CHAT_ID }}
         run: python main.py
 
-      - name: Sauvegarder l'état (state.json, trade_stats.json, candle_cache.json)
+      - name: Sauvegarder l'état (state.json, trade_stats.json, candle_cache.json, weekly_outlook_state.json)
         run: |
           git config user.name "pa-bot"
           git config user.email "pa-bot@users.noreply.github.com"
-          git add state.json trade_stats.json candle_cache.json 2>/dev/null || true
+          git add state.json trade_stats.json candle_cache.json weekly_outlook_state.json 2>/dev/null || true
           git diff --quiet --cached || git commit -m "Mise à jour de l'état [skip ci]"
           git pull --rebase --autostash || true
           git push || true
