@@ -11,6 +11,14 @@ on:
     types: [external-cron]
   workflow_dispatch: {}
 
+# Sans ceci, le GITHUB_TOKEN est en lecture seule par défaut sur la plupart
+# des dépôts créés depuis 2023 -- le "git push" plus bas échouerait alors
+# silencieusement (masqué par le "|| true"), state.json ne serait jamais
+# réellement mis à jour sur le dépôt, et les mêmes alertes redeviendraient
+# "nouvelles" à chaque exécution suivante.
+permissions:
+  contents: write
+
 # Avec deux sources de déclenchement (schedule + cron-job.org), deux
 # exécutions pourraient se chevaucher. Sans cette protection, elles liraient
 # le même state.json de départ et l'une écraserait le commit de l'autre en
@@ -48,4 +56,7 @@ jobs:
           git add state.json trade_stats.json candle_cache.json weekly_outlook_state.json 2>/dev/null || true
           git diff --quiet --cached || git commit -m "Mise à jour de l'état [skip ci]"
           git pull --rebase --autostash || true
-          git push || true
+          if ! git push; then
+            echo "::error::Echec du push -- state.json n'a pas été sauvegardé. Vérifiez Settings > Actions > General > Workflow permissions (doit être 'Read and write')."
+            exit 1
+          fi
