@@ -4,7 +4,7 @@ from datetime import datetime, timezone
 
 from data_client import is_forex_or_gold
 
-GRANULARITY_SECONDS = {"D1": 86400, "H4": 14400, "H1": 3600, "M15": 900}
+GRANULARITY_SECONDS = {"D1": 86400, "H4": 14400, "H1": 3600, "M15": 900, "M5": 300}
 
 
 def has_weekend_gaps(symbol):

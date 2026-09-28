@@ -10,7 +10,11 @@ laquelle des deux l'a déclenchée :
 - **CRT** (Candle Range Trading) : range de référence (HTF) -> sweep de
   liquidité (manipulation) + Fair Value Gap / Order Block (MTF) -> cassure de
   structure (confirmation, LTF). Règles identiques à l'ancien bot CRT
-  (`crt_strategy.py`).
+  (`crt_strategy.py`). Pour la **crypto uniquement**, un niveau de cascade
+  supplémentaire (H1 -> M15 -> confirmation M5) est actif, comme dans l'ancien
+  bot -- non appliqué au forex/or pour ne pas alourdir le quota Twelve Data
+  (le M5 se rafraîchit 3x plus souvent que le M15). Kraken n'a pas cette
+  contrainte de quota, donc aucun risque côté crypto.
 
 ## Sources de données -- pourquoi pas OANDA ni websocket Deriv
 

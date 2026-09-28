@@ -12,10 +12,18 @@ from trade_tracker import (
 )
 
 ALL_TIMEFRAMES = ["D1", "H4", "H1", "M15"]
+# M5 réservé à la crypto (Kraken) -- voir config.TIMEFRAME_CASCADE_CRT_CRYPTO_EXTRA.
+CRYPTO_ONLY_TIMEFRAMES = ["M5"]
 
 
 def build_specs(symbols):
-    return [(symbol, tf, CANDLE_COUNT) for symbol in symbols for tf in ALL_TIMEFRAMES]
+    specs = [(symbol, tf, CANDLE_COUNT) for symbol in symbols for tf in ALL_TIMEFRAMES]
+    specs += [
+        (symbol, tf, CANDLE_COUNT)
+        for symbol in symbols if not is_forex_or_gold(symbol)
+        for tf in CRYPTO_ONLY_TIMEFRAMES
+    ]
+    return specs
 
 
 def run():
@@ -105,6 +113,15 @@ def run():
 
         if skip_symbol:
             continue
+
+        # M5 (crypto uniquement) : optionnel, n'empêche pas le reste de
+        # l'analyse en cas d'échec -- seule la cascade H1->M15->M5 en dépend.
+        if not is_forex_or_gold(symbol):
+            m5_candles = results.get((symbol, "M5"))
+            if isinstance(m5_candles, Exception) or not m5_candles:
+                print(f"[{symbol}] Erreur de récupération (M5) : {m5_candles}")
+            else:
+                candles_by_tf["M5"] = m5_candles
 
         setups = impulse_strategy.analyze_symbol(symbol, candles_by_tf) + crt_strategy.analyze_symbol(symbol, candles_by_tf)
 

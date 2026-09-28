@@ -89,15 +89,19 @@ SESSION_SYMBOLS = {
 ALWAYS_ON_SYMBOLS = CRYPTOS
 
 # --- Granularités : mêmes clés internes, converties par chaque client API ---
-GRANULARITY = {"D1": "D1", "H4": "H4", "H1": "H1", "M15": "M15"}
+GRANULARITY = {"D1": "D1", "H4": "H4", "H1": "H1", "M15": "M15", "M5": "M5"}
 TWELVEDATA_INTERVAL = {"D1": "1day", "H4": "4h", "H1": "1h", "M15": "15min"}
-KRAKEN_INTERVAL = {"D1": 1440, "H4": 240, "H1": 60, "M15": 15}  # en minutes
+# M5 volontairement absent de TWELVEDATA_INTERVAL : le M5 n'est utilisé que
+# pour la crypto (Kraken) afin de ne pas alourdir le quota Twelve Data --
+# toute tentative accidentelle de le demander pour du forex doit échouer
+# bruyamment (KeyError) plutôt que de consommer du quota en silence.
+KRAKEN_INTERVAL = {"D1": 1440, "H4": 240, "H1": 60, "M15": 15, "M5": 5}  # en minutes
 
 # --- Cache de bougies (candle_cache.py) : évite de re-télécharger une bougie
 # tant que sa période n'est pas révolue -- indispensable pour rester sous les
 # 800 requêtes/jour du palier gratuit Twelve Data. Clé = timeframe interne,
 # valeur = durée de validité du cache en secondes (= durée d'une bougie).
-CACHE_TTL_SECONDS = {"D1": 86400, "H4": 14400, "H1": 3600, "M15": 900}
+CACHE_TTL_SECONDS = {"D1": 86400, "H4": 14400, "H1": 3600, "M15": 900, "M5": 300}
 CANDLE_CACHE_FILE = "candle_cache.json"
 
 # --- Outlook hebdomadaire (week-end) : biais directionnel D1/W1 par actif,
@@ -116,6 +120,13 @@ TIMEFRAME_CASCADE_CRT = {
     "W1": {"mtf": "D1", "confirmation": ["H4"]},
     "D1": {"mtf": "H4", "confirmation": ["H1"]},
     "H4": {"mtf": "H1", "confirmation": ["M15"]},
+}
+
+# Niveau de cascade supplémentaire (H1 -> M15 -> M5), réservé à la crypto
+# (Kraken) -- identique à l'ancien bot CRT. Non appliqué au forex/or pour ne
+# pas alourdir le quota Twelve Data (voir TWELVEDATA_INTERVAL ci-dessus).
+TIMEFRAME_CASCADE_CRT_CRYPTO_EXTRA = {
+    "H1": {"mtf": "M15", "confirmation": ["M5"]},
 }
 
 CANDLE_COUNT = 500
@@ -146,7 +157,7 @@ IMPULSE_STOP_LOSS_BUFFER_PCT = 0.001
 # --- Stratégie CRT : sweep de liquidité + FVG/Order Block ---
 # Fenêtre utilisée pour repérer les pivots lors de la cassure de structure,
 # par timeframe de confirmation. Non listé -> DEFAULT_STRUCTURE_SWING_WINDOW.
-STRUCTURE_SWING_WINDOW = {"M15": 1}
+STRUCTURE_SWING_WINDOW = {"M15": 1, "M5": 1}
 DEFAULT_STRUCTURE_SWING_WINDOW = 2
 # Timeframes où la confirmation est renforcée : FVG ET Order Block exigés ensemble.
 STRICT_CONFIRMATION_TIMEFRAMES = []

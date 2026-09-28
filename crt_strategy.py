@@ -18,6 +18,7 @@ d'aide à la décision, à backtester/affiner avant tout usage réel.
 
 from datetime import datetime, timezone
 
+from data_client import is_forex_or_gold
 from common import (
     has_weekend_gaps, is_gap_candle, find_swing_highs_lows, detect_trend,
     find_index_after_epoch, detect_structure_shift,
@@ -25,7 +26,8 @@ from common import (
 )
 from config import (
     TREND_SWING_WINDOW, TREND_SWING_COUNT, TREND_SMA_PERIOD,
-    TIMEFRAME_CASCADE_CRT, STRUCTURE_SWING_WINDOW, DEFAULT_STRUCTURE_SWING_WINDOW,
+    TIMEFRAME_CASCADE_CRT, TIMEFRAME_CASCADE_CRT_CRYPTO_EXTRA,
+    STRUCTURE_SWING_WINDOW, DEFAULT_STRUCTURE_SWING_WINDOW,
     STRICT_CONFIRMATION_TIMEFRAMES, CRT_STOP_LOSS_BUFFER_PCT, MIN_RISK_REWARD,
     ORDER_TYPE_TOLERANCE_PCT, REQUIRE_FIB_OTE,
     LIQUIDITY_POOL_SWING_WINDOW, LIQUIDITY_POOL_TOLERANCE_PCT, STOP_LOSS_POOL_BUFFER_PCT,
@@ -259,7 +261,13 @@ def analyze_symbol(symbol, candles_by_tf):
         if trend_source else None
     )
 
-    for ref_tf, cascade in TIMEFRAME_CASCADE_CRT.items():
+    # Niveau de cascade H1->M15->M5 réservé à la crypto (voir config.py) --
+    # non appliqué au forex/or pour ne pas alourdir le quota Twelve Data.
+    cascades = dict(TIMEFRAME_CASCADE_CRT)
+    if not is_forex_or_gold(symbol):
+        cascades.update(TIMEFRAME_CASCADE_CRT_CRYPTO_EXTRA)
+
+    for ref_tf, cascade in cascades.items():
         if ref_tf == "W1":
             ref_range = build_weekly_range(candles_by_tf.get("D1"))
         else:
