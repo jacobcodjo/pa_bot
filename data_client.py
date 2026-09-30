@@ -107,3 +107,21 @@ def get_many_candles(specs, pause_seconds: float = 0.2):
         save_cache(cache)
 
     return results
+
+
+def get_many_cached(specs):
+    """
+    Comme get_many_candles, mais ne fait JAMAIS d'appel réseau : renvoie
+    uniquement ce qui est déjà présent en cache, même expiré (ou None si le
+    symbole/timeframe n'a encore jamais été récupéré). Sert à analyser des
+    symboles en dehors de leur killzone sans consommer le moindre quota API
+    -- au prix de données potentiellement plus anciennes que d'habitude.
+
+    specs : liste de tuples (symbol, tf, count) -- count est ignoré ici.
+    """
+    cache = load_cache()
+    results = {}
+    for symbol, tf, _count in specs:
+        entry = cache.get(_cache_key(symbol, tf))
+        results[(symbol, tf)] = entry["candles"] if entry else None
+    return results

@@ -148,6 +148,28 @@ stable toute l'année.
 Les messages Telegram affichent l'heure en WAT (UTC+1, Afrique de l'Ouest,
 fixe toute l'année) via `DISPLAY_TZ` dans `config.py`.
 
+### Impulse 24/7, y compris hors killzone (CRT reste limité aux killzones)
+
+Le tableau ci-dessus décrit le forex/or scanné en cascade **complète**
+(D1→H4→H1→M15, les deux stratégies). En plus de ça, **Impulse seul** tourne
+aussi sur les 25 paires forex/or **en dehors** de leur killzone (sauf
+week-end) : une belle structure de tendance peut se former à n'importe quelle
+heure, contrairement à CRT qui dépend vraiment des ouvertures de session
+(sweep de liquidité institutionnelle) et reste donc limité aux killzones.
+
+Pour ne consommer **aucun quota Twelve Data supplémentaire**, ce passage
+"hors killzone" :
+- rafraîchit le D1 normalement (coût négligible : 1 requête/jour/symbole) ;
+- lit le H4 et le H1 **depuis le cache existant, sans jamais forcer de
+  nouvel appel réseau** -- au prix de données potentiellement un peu datées
+  (aussi fraîches que la dernière fois que ce symbole était dans sa
+  killzone) ;
+- ne récupère jamais le M15 -- le palier de cascade H4 (qui a besoin du M15
+  comme trigger) est donc naturellement ignoré ici ; seuls les paliers W1 et
+  D1 (triggers H4/H1) peuvent produire un setup hors killzone.
+
+Ces alertes affichent "Hors Killzone" à la place du nom d'une session.
+
 ## Installation
 
 ```

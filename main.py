@@ -1,6 +1,6 @@
-from config import CANDLE_COUNT
+from config import CANDLE_COUNT, ALL_SYMBOLS
 from sessions import get_active_sessions, get_active_symbols, is_forex_market_open
-from data_client import get_many_candles, is_forex_or_gold
+from data_client import get_many_candles, get_many_cached, is_forex_or_gold
 import strategy as impulse_strategy
 import crt_strategy
 import weekly_outlook
@@ -45,6 +45,20 @@ def run():
     active_symbols = get_active_symbols()  # {symbol: [sessions]} -- inclut la crypto 24/7 + forex/or si killzone/marché ouverts
     symbols = list(active_symbols.keys())
 
+    # Impulse (seulement) tourne aussi sur le forex/or HORS killzone, à la
+    # demande explicite -- une belle structure Impulse peut se former à
+    # n'importe quelle heure, contrairement à CRT qui dépend vraiment des
+    # ouvertures de session. Pour ne consommer AUCUN quota Twelve Data
+    # supplémentaire : le D1 est rafraîchi normalement (coût négligible,
+    # 1x/jour/symbole), mais H4/H1 sont lus depuis le cache existant sans
+    # jamais forcer de nouvel appel réseau -- donc potentiellement un peu
+    # datés (aussi frais que la dernière fois que ce symbole était dans sa
+    # killzone), ce qui reste un compromis raisonnable pour ces timeframes.
+    impulse_extra_symbols = (
+        [s for s in ALL_SYMBOLS if is_forex_or_gold(s) and s not in symbols]
+        if forex_open else []
+    )
+
     if active_sessions:
         print(
             f"Killzone(s) forex active(s) : {', '.join(active_sessions)} -- {len(symbols)} symbole(s) à scanner"
@@ -62,6 +76,9 @@ def run():
     any_new = False
 
     specs = build_specs(symbols)
+    # D1 frais pour les symboles Impulse 24/7 hors killzone (coût négligible :
+    # 1 requête/jour/symbole grâce au cache, H4/H1 restent en lecture cache-only).
+    specs += [(symbol, "D1", CANDLE_COUNT) for symbol in impulse_extra_symbols]
 
     # Les trades en attente peuvent concerner des symboles hors killzone
     # active à cet instant (ex: un setup asiatique encore en attente pendant
@@ -140,6 +157,50 @@ def run():
                 mark_setup_sent(state, setup)
                 add_pending(stats, setup)
                 any_new = True
+
+    if impulse_extra_symbols:
+        extra_cached = get_many_cached(
+            [(s, "H4", CANDLE_COUNT) for s in impulse_extra_symbols]
+            + [(s, "H1", CANDLE_COUNT) for s in impulse_extra_symbols]
+        )
+        analyzed_count = 0
+
+        for symbol in impulse_extra_symbols:
+            candles_by_tf = {}
+
+            d1 = results.get((symbol, "D1"))
+            if not d1 or isinstance(d1, Exception):
+                continue  # pas de D1 -> aucune tendance calculable, on ignore ce symbole ce passage
+            candles_by_tf["D1"] = d1
+
+            for tf in ("H4", "H1"):
+                cached = extra_cached.get((symbol, tf))
+                if cached:
+                    candles_by_tf[tf] = cached
+            # Pas de M15 pour ce passage -- le palier H4 (itf H1, trigger M15)
+            # de la cascade Impulse sera donc naturellement ignoré ici ; seuls
+            # les paliers W1 et D1 (triggers H4/H1) peuvent produire un setup.
+
+            analyzed_count += 1
+            setups = impulse_strategy.analyze_symbol(symbol, candles_by_tf)
+
+            for setup in setups:
+                if is_new_setup(state, setup):
+                    message = format_setup_message(setup, ["Hors killzone"])
+                    try:
+                        send_telegram_message(message)
+                        print(
+                            f"[{symbol}] Alerte envoyée (hors killzone) : {setup['strategy']} {setup['direction']} "
+                            f"({setup['htf']}→{setup['zone_tf']}→{setup['trigger_tf']})"
+                        )
+                    except Exception as e:
+                        print(f"[{symbol}] Échec d'envoi Telegram : {e}")
+                        continue
+                    mark_setup_sent(state, setup)
+                    add_pending(stats, setup)
+                    any_new = True
+
+        print(f"Impulse 24/7 hors killzone : {analyzed_count}/{len(impulse_extra_symbols)} symbole(s) analysé(s) (D1 disponible).")
 
     if not any_new:
         print("Aucun nouveau setup détecté sur ce passage.")
