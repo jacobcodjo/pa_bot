@@ -3,6 +3,7 @@ import os
 import time
 
 from config import STATE_FILE, STATE_MAX_AGE_DAYS
+from data_client import is_forex_or_gold
 
 
 def load_state():
@@ -27,10 +28,22 @@ def setup_key(setup: dict) -> str:
     )
 
 
+def _content_decimals(symbol: str) -> int:
+    # Précision alignée sur ce qui est réellement significatif pour l'actif
+    # (pas une précision brute à 6 décimales) -- une JPY-pair ou une crypto
+    # dont le calcul dérive de quelques millièmes entre deux évaluations du
+    # même événement (ex: l'Order Block sélectionné décale d'une bougie)
+    # doit quand même être reconnue comme "le même setup", pas comme un
+    # nouveau. 2 décimales ~ le pip/tick pratique pour ces actifs ; 4 pour
+    # les autres paires forex/or.
+    return 2 if "JPY" in symbol or not is_forex_or_gold(symbol) else 4
+
+
 def content_key(setup: dict) -> str:
-    entry = round(setup["entry"], 6) if setup.get("entry") is not None else None
-    stop_loss = round(setup["stop_loss"], 6)
-    take_profit_1 = round(setup["take_profit_1"], 6)
+    decimals = _content_decimals(setup["symbol"])
+    entry = round(setup["entry"], decimals) if setup.get("entry") is not None else None
+    stop_loss = round(setup["stop_loss"], decimals)
+    take_profit_1 = round(setup["take_profit_1"], decimals)
     return f"content_{setup['strategy']}_{setup['symbol']}_{setup['direction']}_{entry}_{stop_loss}_{take_profit_1}"
 
 
