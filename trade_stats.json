@@ -1,0 +1,35 @@
+{
+  "pending": {
+    "CRT_ETHUSDT_H4_1790812800_1790899200": {
+      "symbol": "ETHUSDT",
+      "strategy": "CRT",
+      "direction": "bearish",
+      "order_type": "Sell Limit",
+      "trigger_tf": "H1",
+      "entry": 2738.2,
+      "stop_loss": 2728.14339,
+      "take_profit_1": 2696.165,
+      "take_profit_2": 2672.35,
+      "risk_reward_1": 4.18,
+      "alert_epoch": 1790960400,
+      "filled": false,
+      "fill_epoch": null
+    },
+    "CRT_XRPUSDT_H4_1790812800_1790956800": {
+      "symbol": "XRPUSDT",
+      "strategy": "CRT",
+      "direction": "bearish",
+      "order_type": "Sell Limit",
+      "trigger_tf": "H1",
+      "entry": 1.5113,
+      "stop_loss": 1.51117521,
+      "take_profit_1": 1.491815,
+      "take_profit_2": 1.47398,
+      "risk_reward_1": 156.14,
+      "alert_epoch": 1790964000,
+      "filled": false,
+      "fill_epoch": null
+    }
+  },
+  "history": []
+}
