@@ -29,22 +29,17 @@
       "alert_epoch": 1790964000,
       "filled": false,
       "fill_epoch": null
-    },
-    "CRT_LTCUSDT_H1_1791014400_1791043200": {
+    }
+  },
+  "history": [
+    {
       "symbol": "LTCUSDT",
       "strategy": "CRT",
       "direction": "bearish",
       "order_type": "Sell Limit",
-      "trigger_tf": "M15",
-      "entry": 69.51,
-      "stop_loss": 69.73485,
-      "take_profit_1": 69.095,
-      "take_profit_2": 68.56,
-      "risk_reward_1": 1.85,
-      "alert_epoch": 1791045000,
-      "filled": false,
-      "fill_epoch": null
+      "risk_reward": 1.85,
+      "result": "SL",
+      "resolved_epoch": 1791066600
     }
-  },
-  "history": []
+  ]
 }
