@@ -29,6 +29,21 @@
       "alert_epoch": 1790964000,
       "filled": false,
       "fill_epoch": null
+    },
+    "CRT_LTCUSDT_M15_1791118800_1791122400": {
+      "symbol": "LTCUSDT",
+      "strategy": "CRT",
+      "direction": "bullish",
+      "order_type": "Buy Limit",
+      "trigger_tf": "M5",
+      "entry": 70.88,
+      "stop_loss": 70.803670455,
+      "take_profit_1": 71.16,
+      "take_profit_2": 71.36,
+      "risk_reward_1": 51.33,
+      "alert_epoch": 1791124200,
+      "filled": false,
+      "fill_epoch": null
     }
   },
   "history": [
