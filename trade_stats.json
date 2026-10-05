@@ -12,36 +12,21 @@
       "take_profit_2": 210.92032,
       "risk_reward_1": 1.59,
       "alert_epoch": 1790802000,
-      "filled": false,
-      "fill_epoch": null
+      "filled": true,
+      "fill_epoch": 1790859600
     },
-    "CRT_GBP_JPY_D1_1790467200_1790640000": {
-      "symbol": "GBP_JPY",
+    "CRT_BTCUSDT_M15_1791172800_1791176400": {
+      "symbol": "BTCUSDT",
       "strategy": "CRT",
       "direction": "bullish",
       "order_type": "Buy Limit",
-      "trigger_tf": "H4",
-      "entry": 208.29799,
-      "stop_loss": 207.776769645,
-      "take_profit_1": 209.48605500000002,
-      "take_profit_2": 210.92032,
-      "risk_reward_1": 2.28,
-      "alert_epoch": 1790802000,
-      "filled": false,
-      "fill_epoch": null
-    },
-    "Impulse_AUD_JPY_D1_1774915200_1776384000": {
-      "symbol": "AUD_JPY",
-      "strategy": "Impulse",
-      "direction": "bullish",
-      "order_type": "Buy Limit",
-      "trigger_tf": "H4",
-      "entry": 110.5013972,
-      "stop_loss": 108.76357755,
-      "take_profit_1": 115.87252039999998,
-      "take_profit_2": 117.77662759999998,
-      "risk_reward_1": 3.09,
-      "alert_epoch": 1787706000,
+      "trigger_tf": "M5",
+      "entry": 85500.0,
+      "stop_loss": 85323.16577565,
+      "take_profit_1": 85784.29999999999,
+      "take_profit_2": 86117.2,
+      "risk_reward_1": 3.11,
+      "alert_epoch": 1791178500,
       "filled": false,
       "fill_epoch": null
     }
@@ -82,6 +67,24 @@
       "risk_reward": 156.14,
       "result": "SL",
       "resolved_epoch": 1791151200
+    },
+    {
+      "symbol": "GBP_JPY",
+      "strategy": "CRT",
+      "direction": "bullish",
+      "order_type": "Buy Limit",
+      "risk_reward": 2.28,
+      "result": "SL",
+      "resolved_epoch": 1790931600
+    },
+    {
+      "symbol": "AUD_JPY",
+      "strategy": "Impulse",
+      "direction": "bullish",
+      "order_type": "Buy Limit",
+      "risk_reward": 3.09,
+      "result": "SL",
+      "resolved_epoch": 1790859600
     }
   ]
 }
