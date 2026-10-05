@@ -15,36 +15,6 @@
       "filled": true,
       "fill_epoch": 1790859600
     },
-    "CRT_BTCUSDT_M15_1791172800_1791176400": {
-      "symbol": "BTCUSDT",
-      "strategy": "CRT",
-      "direction": "bullish",
-      "order_type": "Buy Limit",
-      "trigger_tf": "M5",
-      "entry": 85500.0,
-      "stop_loss": 85323.16577565,
-      "take_profit_1": 85784.29999999999,
-      "take_profit_2": 86117.2,
-      "risk_reward_1": 3.11,
-      "alert_epoch": 1791178500,
-      "filled": false,
-      "fill_epoch": null
-    },
-    "CRT_GBP_USD_D1_1790467200_1790640000": {
-      "symbol": "GBP_USD",
-      "strategy": "CRT",
-      "direction": "bullish",
-      "order_type": "Buy Stop",
-      "trigger_tf": "H4",
-      "entry": 1.32348,
-      "stop_loss": 1.31924005,
-      "take_profit_1": 1.33024,
-      "take_profit_2": 1.34,
-      "risk_reward_1": 1.59,
-      "alert_epoch": 1790758800,
-      "filled": false,
-      "fill_epoch": null
-    },
     "CRT_USD_CAD_H4_1791072000_1791129600": {
       "symbol": "USD_CAD",
       "strategy": "CRT",
@@ -128,6 +98,24 @@
       "direction": "bullish",
       "order_type": "Buy Limit",
       "risk_reward": 3.09,
+      "result": "SL",
+      "resolved_epoch": 1790859600
+    },
+    {
+      "symbol": "BTCUSDT",
+      "strategy": "CRT",
+      "direction": "bullish",
+      "order_type": "Buy Limit",
+      "risk_reward": 3.11,
+      "result": "TP",
+      "resolved_epoch": 1791211200
+    },
+    {
+      "symbol": "GBP_USD",
+      "strategy": "CRT",
+      "direction": "bullish",
+      "order_type": "Buy Stop",
+      "risk_reward": 1.59,
       "result": "SL",
       "resolved_epoch": 1790859600
     }
