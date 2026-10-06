@@ -1,20 +1,5 @@
 {
   "pending": {
-    "CRT_GBP_JPY_D1_1790467200_1790553600": {
-      "symbol": "GBP_JPY",
-      "strategy": "CRT",
-      "direction": "bullish",
-      "order_type": "Buy Limit",
-      "trigger_tf": "H4",
-      "entry": 208.29799,
-      "stop_loss": 207.552601785,
-      "take_profit_1": 209.48605500000002,
-      "take_profit_2": 210.92032,
-      "risk_reward_1": 1.59,
-      "alert_epoch": 1790802000,
-      "filled": true,
-      "fill_epoch": 1790859600
-    },
     "Impulse_XAU_USD_H4_1790542800_1790614800": {
       "symbol": "XAU_USD",
       "strategy": "Impulse",
@@ -136,6 +121,15 @@
       "risk_reward": 3.02,
       "result": "SL",
       "resolved_epoch": 1791250200
+    },
+    {
+      "symbol": "GBP_JPY",
+      "strategy": "CRT",
+      "direction": "bullish",
+      "order_type": "Buy Limit",
+      "risk_reward": 1.59,
+      "result": "TP",
+      "resolved_epoch": 1791273600
     }
   ]
 }
