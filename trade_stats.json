@@ -15,21 +15,6 @@
       "filled": false,
       "fill_epoch": null
     },
-    "Impulse_LTCUSDT_H1_1790964000_1790985600": {
-      "symbol": "LTCUSDT",
-      "strategy": "Impulse",
-      "direction": "bullish",
-      "order_type": "Buy Limit",
-      "trigger_tf": "M15",
-      "entry": 68.63368,
-      "stop_loss": 67.4325,
-      "take_profit_1": 72.37176,
-      "take_profit_2": 73.69694,
-      "risk_reward_1": 3.11,
-      "alert_epoch": 1791124200,
-      "filled": false,
-      "fill_epoch": null
-    },
     "CRT_AUD_CAD_H4_1791158400_1791288000": {
       "symbol": "AUD_CAD",
       "strategy": "CRT",
@@ -145,6 +130,15 @@
       "risk_reward": 1.59,
       "result": "TP",
       "resolved_epoch": 1791273600
+    },
+    {
+      "symbol": "LTCUSDT",
+      "strategy": "Impulse",
+      "direction": "bullish",
+      "order_type": "Buy Limit",
+      "risk_reward": 3.11,
+      "result": "SL",
+      "resolved_epoch": 1791338400
     }
   ]
 }
