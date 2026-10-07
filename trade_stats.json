@@ -29,6 +29,21 @@
       "alert_epoch": 1791124200,
       "filled": false,
       "fill_epoch": null
+    },
+    "CRT_AUD_CAD_H4_1791158400_1791288000": {
+      "symbol": "AUD_CAD",
+      "strategy": "CRT",
+      "direction": "bearish",
+      "order_type": "Sell Limit",
+      "trigger_tf": "H1",
+      "entry": 0.99455,
+      "stop_loss": 0.9960077549999999,
+      "take_profit_1": 0.991205,
+      "take_profit_2": 0.98831,
+      "risk_reward_1": 2.29,
+      "alert_epoch": 1791295200,
+      "filled": false,
+      "fill_epoch": null
     }
   },
   "history": [
