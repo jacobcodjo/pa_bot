@@ -1,50 +1,5 @@
 {
   "pending": {
-    "Impulse_XAU_USD_H4_1790542800_1790614800": {
-      "symbol": "XAU_USD",
-      "strategy": "Impulse",
-      "direction": "bearish",
-      "order_type": "Sell Limit",
-      "trigger_tf": "H1",
-      "entry": 4235.42596536,
-      "stop_loss": 4291.692625219999,
-      "take_profit_1": 4064.034909520001,
-      "take_profit_2": 4003.2753753800007,
-      "risk_reward_1": 3.05,
-      "alert_epoch": 1790953200,
-      "filled": false,
-      "fill_epoch": null
-    },
-    "CRT_AUD_CAD_H4_1791158400_1791288000": {
-      "symbol": "AUD_CAD",
-      "strategy": "CRT",
-      "direction": "bearish",
-      "order_type": "Sell Limit",
-      "trigger_tf": "H1",
-      "entry": 0.99455,
-      "stop_loss": 0.9960077549999999,
-      "take_profit_1": 0.991205,
-      "take_profit_2": 0.98831,
-      "risk_reward_1": 2.29,
-      "alert_epoch": 1791295200,
-      "filled": false,
-      "fill_epoch": null
-    },
-    "CRT_USD_CAD_D1_1791072000_1791244800": {
-      "symbol": "USD_CAD",
-      "strategy": "CRT",
-      "direction": "bearish",
-      "order_type": "Sell Stop",
-      "trigger_tf": "H4",
-      "entry": 1.42631,
-      "stop_loss": 1.4292842849999998,
-      "take_profit_1": 1.420115,
-      "take_profit_2": 1.41387,
-      "risk_reward_1": 2.08,
-      "alert_epoch": 1791288000,
-      "filled": true,
-      "fill_epoch": 1791302400
-    },
     "CRT_AUD_JPY_H4_1791331200_1791432000": {
       "symbol": "AUD_JPY",
       "strategy": "CRT",
@@ -235,6 +190,33 @@
       "risk_reward": 1.25,
       "result": "SL",
       "resolved_epoch": 1791478800
+    },
+    {
+      "symbol": "AUD_CAD",
+      "strategy": "CRT",
+      "direction": "bearish",
+      "order_type": "Sell Limit",
+      "risk_reward": 2.29,
+      "result": "SL",
+      "resolved_epoch": 1791550800
+    },
+    {
+      "symbol": "USD_CAD",
+      "strategy": "CRT",
+      "direction": "bearish",
+      "order_type": "Sell Stop",
+      "risk_reward": 2.08,
+      "result": "SL",
+      "resolved_epoch": 1791547200
+    },
+    {
+      "symbol": "XAU_USD",
+      "strategy": "Impulse",
+      "direction": "bearish",
+      "order_type": "Sell Limit",
+      "risk_reward": 3.05,
+      "result": "EXPIRE",
+      "resolved_epoch": 1791563852.519615
     }
   ]
 }
