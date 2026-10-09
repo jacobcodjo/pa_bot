@@ -45,36 +45,6 @@
       "filled": true,
       "fill_epoch": 1791302400
     },
-    "CRT_EUR_JPY_H4_1791244800_1791417600": {
-      "symbol": "EUR_JPY",
-      "strategy": "CRT",
-      "direction": "bullish",
-      "order_type": "Buy Limit",
-      "trigger_tf": "H1",
-      "entry": 176.93104,
-      "stop_loss": 176.48486342500001,
-      "take_profit_1": 177.701235,
-      "take_profit_2": 178.36264,
-      "risk_reward_1": 1.73,
-      "alert_epoch": 1791424800,
-      "filled": true,
-      "fill_epoch": 1791442800
-    },
-    "CRT_GBP_JPY_H4_1791331200_1791446400": {
-      "symbol": "GBP_JPY",
-      "strategy": "CRT",
-      "direction": "bullish",
-      "order_type": "Buy Limit",
-      "trigger_tf": "H1",
-      "entry": 208.93687,
-      "stop_loss": 208.51908830000002,
-      "take_profit_1": 209.460055,
-      "take_profit_2": 210.23472,
-      "risk_reward_1": 1.25,
-      "alert_epoch": 1791468000,
-      "filled": false,
-      "fill_epoch": null
-    },
     "CRT_AUD_JPY_H4_1791331200_1791432000": {
       "symbol": "AUD_JPY",
       "strategy": "CRT",
@@ -87,6 +57,36 @@
       "take_profit_2": 110.64716,
       "risk_reward_1": 3.71,
       "alert_epoch": 1791511200,
+      "filled": false,
+      "fill_epoch": null
+    },
+    "CRT_GBP_USD_H4_1791331200_1791432000": {
+      "symbol": "GBP_USD",
+      "strategy": "CRT",
+      "direction": "bullish",
+      "order_type": "Buy Limit",
+      "trigger_tf": "H1",
+      "entry": 1.32036,
+      "stop_loss": 1.31824055,
+      "take_profit_1": 1.32363,
+      "take_profit_2": 1.32781,
+      "risk_reward_1": 1.54,
+      "alert_epoch": 1791468000,
+      "filled": false,
+      "fill_epoch": null
+    },
+    "CRT_XAU_USD_D1_1791072000_1791417600": {
+      "symbol": "XAU_USD",
+      "strategy": "CRT",
+      "direction": "bullish",
+      "order_type": "Buy Limit",
+      "trigger_tf": "H4",
+      "entry": 4138.90154,
+      "stop_loss": 4098.3765866,
+      "take_profit_1": 4199.602425,
+      "take_profit_2": 4287.40522,
+      "risk_reward_1": 1.5,
+      "alert_epoch": 1791518400,
       "filled": false,
       "fill_epoch": null
     }
@@ -217,6 +217,24 @@
       "risk_reward": 1.27,
       "result": "TP",
       "resolved_epoch": 1791374400
+    },
+    {
+      "symbol": "EUR_JPY",
+      "strategy": "CRT",
+      "direction": "bullish",
+      "order_type": "Buy Limit",
+      "risk_reward": 1.73,
+      "result": "TP",
+      "resolved_epoch": 1791522000
+    },
+    {
+      "symbol": "GBP_JPY",
+      "strategy": "CRT",
+      "direction": "bullish",
+      "order_type": "Buy Limit",
+      "risk_reward": 1.25,
+      "result": "SL",
+      "resolved_epoch": 1791478800
     }
   ]
 }
