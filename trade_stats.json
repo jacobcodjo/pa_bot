@@ -44,6 +44,21 @@
       "alert_epoch": 1791518400,
       "filled": false,
       "fill_epoch": null
+    },
+    "CRT_XRPUSDT_H4_1791504000_1791619200": {
+      "symbol": "XRPUSDT",
+      "strategy": "CRT",
+      "direction": "bearish",
+      "order_type": "Sell Stop",
+      "trigger_tf": "H1",
+      "entry": 1.40156,
+      "stop_loss": 1.410034665,
+      "take_profit_1": 1.3894,
+      "take_profit_2": 1.37297,
+      "risk_reward_1": 1.43,
+      "alert_epoch": 1791630000,
+      "filled": false,
+      "fill_epoch": null
     }
   },
   "history": [
