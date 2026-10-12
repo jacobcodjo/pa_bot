@@ -27,8 +27,8 @@
       "take_profit_2": 1.32781,
       "risk_reward_1": 1.54,
       "alert_epoch": 1791468000,
-      "filled": false,
-      "fill_epoch": null
+      "filled": true,
+      "fill_epoch": 1791817200
     },
     "CRT_XAU_USD_D1_1791072000_1791417600": {
       "symbol": "XAU_USD",
@@ -45,33 +45,33 @@
       "filled": false,
       "fill_epoch": null
     },
-    "CRT_BTCUSDT_D1_1791072000_1791590400": {
+    "CRT_BTCUSDT_H4_1791590400_1791691200": {
       "symbol": "BTCUSDT",
       "strategy": "CRT",
-      "direction": "bullish",
-      "order_type": "Buy Limit",
-      "trigger_tf": "H4",
-      "entry": 83066.6,
-      "stop_loss": 82433.5626,
-      "take_profit_1": 84897.7,
-      "take_profit_2": 87229.0,
-      "risk_reward_1": 2.89,
-      "alert_epoch": 1791720000,
+      "direction": "bearish",
+      "order_type": "Sell Limit",
+      "trigger_tf": "H1",
+      "entry": 83226.6,
+      "stop_loss": 83265.7530705,
+      "take_profit_1": 82782.25,
+      "take_profit_2": 82474.8,
+      "risk_reward_1": 10.09,
+      "alert_epoch": 1791806400,
       "filled": false,
       "fill_epoch": null
     },
-    "CRT_GBP_NZD_D1_1791072000_1791417600": {
-      "symbol": "GBP_NZD",
+    "CRT_BTCUSDT_H4_1791590400_1791705600": {
+      "symbol": "BTCUSDT",
       "strategy": "CRT",
       "direction": "bearish",
-      "order_type": "Sell Stop",
-      "trigger_tf": "H4",
-      "entry": 2.35923,
-      "stop_loss": 2.36466174,
-      "take_profit_1": 2.3482250000000002,
-      "take_profit_2": 2.33449,
-      "risk_reward_1": 2.03,
-      "alert_epoch": 1791504000,
+      "order_type": "Sell Limit",
+      "trigger_tf": "H1",
+      "entry": 83226.6,
+      "stop_loss": 83241.91735859998,
+      "take_profit_1": 82782.25,
+      "take_profit_2": 82474.8,
+      "risk_reward_1": 6.55,
+      "alert_epoch": 1791806400,
       "filled": false,
       "fill_epoch": null
     }
@@ -283,6 +283,24 @@
       "risk_reward": 1.78,
       "result": "SL",
       "resolved_epoch": 1791747000
+    },
+    {
+      "symbol": "BTCUSDT",
+      "strategy": "CRT",
+      "direction": "bullish",
+      "order_type": "Buy Limit",
+      "risk_reward": 2.89,
+      "result": "SL",
+      "resolved_epoch": 1791820800
+    },
+    {
+      "symbol": "GBP_NZD",
+      "strategy": "CRT",
+      "direction": "bearish",
+      "order_type": "Sell Stop",
+      "risk_reward": 2.03,
+      "result": "SL",
+      "resolved_epoch": 1791792000
     }
   ]
 }
