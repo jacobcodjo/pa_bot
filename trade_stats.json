@@ -59,6 +59,21 @@
       "alert_epoch": 1791720000,
       "filled": false,
       "fill_epoch": null
+    },
+    "CRT_GBP_NZD_D1_1791072000_1791417600": {
+      "symbol": "GBP_NZD",
+      "strategy": "CRT",
+      "direction": "bearish",
+      "order_type": "Sell Stop",
+      "trigger_tf": "H4",
+      "entry": 2.35923,
+      "stop_loss": 2.36466174,
+      "take_profit_1": 2.3482250000000002,
+      "take_profit_2": 2.33449,
+      "risk_reward_1": 2.03,
+      "alert_epoch": 1791504000,
+      "filled": false,
+      "fill_epoch": null
     }
   },
   "history": [
