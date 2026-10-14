@@ -15,21 +15,6 @@
       "filled": false,
       "fill_epoch": null
     },
-    "CRT_BTCUSDT_H1_1791979200_1791993600": {
-      "symbol": "BTCUSDT",
-      "strategy": "CRT",
-      "direction": "bullish",
-      "order_type": "Buy Stop",
-      "trigger_tf": "M15",
-      "entry": 81928.3,
-      "stop_loss": 81459.25,
-      "take_profit_1": 82676.4,
-      "take_profit_2": 83845.2,
-      "risk_reward_1": 1.59,
-      "alert_epoch": 1791995400,
-      "filled": false,
-      "fill_epoch": null
-    },
     "CRT_XRPUSDT_H4_1791849600_1791979200": {
       "symbol": "XRPUSDT",
       "strategy": "CRT",
@@ -325,6 +310,15 @@
       "risk_reward": 2.72,
       "result": "TP",
       "resolved_epoch": 1791979200
+    },
+    {
+      "symbol": "BTCUSDT",
+      "strategy": "CRT",
+      "direction": "bullish",
+      "order_type": "Buy Stop",
+      "risk_reward": 1.59,
+      "result": "SL",
+      "resolved_epoch": 1791999900
     }
   ]
 }
