@@ -29,6 +29,51 @@
       "alert_epoch": 1791986400,
       "filled": false,
       "fill_epoch": null
+    },
+    "CRT_GBP_JPY_H4_1791849600_1791921600": {
+      "symbol": "GBP_JPY",
+      "strategy": "CRT",
+      "direction": "bearish",
+      "order_type": "Sell Limit",
+      "trigger_tf": "H1",
+      "entry": 210.09119,
+      "stop_loss": 210.105490245,
+      "take_profit_1": 209.433065,
+      "take_profit_2": 208.92752,
+      "risk_reward_1": 46.02,
+      "alert_epoch": 1791990000,
+      "filled": false,
+      "fill_epoch": null
+    },
+    "CRT_CAD_JPY_H4_1791849600_1791936000": {
+      "symbol": "CAD_JPY",
+      "strategy": "CRT",
+      "direction": "bearish",
+      "order_type": "Sell Limit",
+      "trigger_tf": "H1",
+      "entry": 111.4441,
+      "stop_loss": 111.620612415,
+      "take_profit_1": 111.10809,
+      "take_profit_2": 110.68324,
+      "risk_reward_1": 1.9,
+      "alert_epoch": 1791982800,
+      "filled": false,
+      "fill_epoch": null
+    },
+    "CRT_CAD_JPY_H4_1791849600_1791950400": {
+      "symbol": "CAD_JPY",
+      "strategy": "CRT",
+      "direction": "bearish",
+      "order_type": "Sell Limit",
+      "trigger_tf": "H1",
+      "entry": 111.4441,
+      "stop_loss": 111.59439931499999,
+      "take_profit_1": 111.10809,
+      "take_profit_2": 110.68324,
+      "risk_reward_1": 2.24,
+      "alert_epoch": 1791982800,
+      "filled": false,
+      "fill_epoch": null
     }
   },
   "history": [
