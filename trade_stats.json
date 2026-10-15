@@ -59,6 +59,21 @@
       "alert_epoch": 1791982800,
       "filled": false,
       "fill_epoch": null
+    },
+    "CRT_EUR_AUD_D1_1791676800_1791936000": {
+      "symbol": "EUR_AUD",
+      "strategy": "CRT",
+      "direction": "bullish",
+      "order_type": "Buy Limit",
+      "trigger_tf": "H4",
+      "entry": 1.59883,
+      "stop_loss": 1.592633285,
+      "take_profit_1": 1.610905,
+      "take_profit_2": 1.62181,
+      "risk_reward_1": 1.95,
+      "alert_epoch": 1792022400,
+      "filled": false,
+      "fill_epoch": null
     }
   },
   "history": [
