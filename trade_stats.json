@@ -1,20 +1,5 @@
 {
   "pending": {
-    "CRT_AUD_JPY_H4_1791331200_1791432000": {
-      "symbol": "AUD_JPY",
-      "strategy": "CRT",
-      "direction": "bullish",
-      "order_type": "Buy Limit",
-      "trigger_tf": "H1",
-      "entry": 109.88933,
-      "stop_loss": 109.789627725,
-      "take_profit_1": 110.258805,
-      "take_profit_2": 110.64716,
-      "risk_reward_1": 3.71,
-      "alert_epoch": 1791511200,
-      "filled": false,
-      "fill_epoch": null
-    },
     "CRT_XRPUSDT_H4_1791849600_1791979200": {
       "symbol": "XRPUSDT",
       "strategy": "CRT",
@@ -364,6 +349,15 @@
       "risk_reward": 1.59,
       "result": "SL",
       "resolved_epoch": 1791999900
+    },
+    {
+      "symbol": "AUD_JPY",
+      "strategy": "CRT",
+      "direction": "bullish",
+      "order_type": "Buy Limit",
+      "risk_reward": 3.71,
+      "result": "SL",
+      "resolved_epoch": 1792026000
     }
   ]
 }
