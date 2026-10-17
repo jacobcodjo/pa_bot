@@ -162,8 +162,8 @@
       "take_profit_2": 2334.0950000000003,
       "risk_reward_1": 3.07,
       "alert_epoch": 1792029600,
-      "filled": false,
-      "fill_epoch": null
+      "filled": true,
+      "fill_epoch": 1792148400
     },
     "Impulse_ETHUSDT_H1_1791979200_1791986400": {
       "symbol": "ETHUSDT",
@@ -177,21 +177,6 @@
       "take_profit_2": 2350.0111399999996,
       "risk_reward_1": 3.05,
       "alert_epoch": 1792163700,
-      "filled": false,
-      "fill_epoch": null
-    },
-    "Impulse_XRPUSDT_H1_1791835200_1791849600": {
-      "symbol": "XRPUSDT",
-      "strategy": "Impulse",
-      "direction": "bearish",
-      "order_type": "Sell Limit",
-      "trigger_tf": "M15",
-      "entry": 1.3519513600000002,
-      "stop_loss": 1.37095959,
-      "take_profit_1": 1.29379152,
-      "take_profit_2": 1.27317338,
-      "risk_reward_1": 3.06,
-      "alert_epoch": 1792030500,
       "filled": false,
       "fill_epoch": null
     },
@@ -607,6 +592,15 @@
       "risk_reward": 1.45,
       "result": "TP",
       "resolved_epoch": 1792170000
+    },
+    {
+      "symbol": "XRPUSDT",
+      "strategy": "Impulse",
+      "direction": "bearish",
+      "order_type": "Sell Limit",
+      "risk_reward": 3.06,
+      "result": "TP",
+      "resolved_epoch": 1792170900
     }
   ]
 }
