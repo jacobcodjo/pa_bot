@@ -194,6 +194,21 @@
       "alert_epoch": 1792030500,
       "filled": false,
       "fill_epoch": null
+    },
+    "CRT_ETHUSDT_H1_1792238400_1792256400": {
+      "symbol": "ETHUSDT",
+      "strategy": "CRT",
+      "direction": "bullish",
+      "order_type": "Buy Limit",
+      "trigger_tf": "M15",
+      "entry": 2404.21,
+      "stop_loss": 2396.771015,
+      "take_profit_1": 2418.1,
+      "take_profit_2": 2431.77,
+      "risk_reward_1": 1.87,
+      "alert_epoch": 1792260000,
+      "filled": false,
+      "fill_epoch": null
     }
   },
   "history": [
