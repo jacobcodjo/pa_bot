@@ -42,8 +42,8 @@
       "take_profit_2": 84049.3,
       "risk_reward_1": 6.55,
       "alert_epoch": 1792076400,
-      "filled": false,
-      "fill_epoch": null
+      "filled": true,
+      "fill_epoch": 1792270800
     },
     "CRT_BTCUSDT_H4_1791936000_1792065600": {
       "symbol": "BTCUSDT",
@@ -57,8 +57,8 @@
       "take_profit_2": 84049.3,
       "risk_reward_1": 2.01,
       "alert_epoch": 1792072800,
-      "filled": false,
-      "fill_epoch": null
+      "filled": true,
+      "fill_epoch": 1792270800
     },
     "CRT_ETHUSDT_H4_1791936000_1792065600": {
       "symbol": "ETHUSDT",
@@ -74,21 +74,6 @@
       "alert_epoch": 1792072800,
       "filled": false,
       "fill_epoch": null
-    },
-    "CRT_XRPUSDT_H4_1791936000_1792022400": {
-      "symbol": "XRPUSDT",
-      "strategy": "CRT",
-      "direction": "bullish",
-      "order_type": "Buy Limit",
-      "trigger_tf": "H1",
-      "entry": 1.30267,
-      "stop_loss": 1.28277829,
-      "take_profit_1": 1.34368,
-      "take_profit_2": 1.38535,
-      "risk_reward_1": 2.06,
-      "alert_epoch": 1792076400,
-      "filled": true,
-      "fill_epoch": 1792170000
     },
     "CRT_GBP_AUD_D1_1791676800_1792022400": {
       "symbol": "GBP_AUD",
@@ -150,21 +135,6 @@
       "filled": false,
       "fill_epoch": null
     },
-    "Impulse_ETHUSDT_H1_1791835200_1791849600": {
-      "symbol": "ETHUSDT",
-      "strategy": "Impulse",
-      "direction": "bearish",
-      "order_type": "Sell Limit",
-      "trigger_tf": "M15",
-      "entry": 2489.43,
-      "stop_loss": 2526.7342099999996,
-      "take_profit_1": 2374.75,
-      "take_profit_2": 2334.0950000000003,
-      "risk_reward_1": 3.07,
-      "alert_epoch": 1792029600,
-      "filled": true,
-      "fill_epoch": 1792148400
-    },
     "Impulse_ETHUSDT_H1_1791979200_1791986400": {
       "symbol": "ETHUSDT",
       "strategy": "Impulse",
@@ -195,18 +165,18 @@
       "filled": false,
       "fill_epoch": null
     },
-    "CRT_ETHUSDT_H1_1792238400_1792256400": {
-      "symbol": "ETHUSDT",
+    "CRT_LTCUSDT_H1_1792252800_1792267200": {
+      "symbol": "LTCUSDT",
       "strategy": "CRT",
-      "direction": "bullish",
-      "order_type": "Buy Limit",
+      "direction": "bearish",
+      "order_type": "Sell Limit",
       "trigger_tf": "M15",
-      "entry": 2404.21,
-      "stop_loss": 2396.771015,
-      "take_profit_1": 2418.1,
-      "take_profit_2": 2431.77,
-      "risk_reward_1": 1.87,
-      "alert_epoch": 1792260000,
+      "entry": 59.24,
+      "stop_loss": 59.38968,
+      "take_profit_1": 58.870000000000005,
+      "take_profit_2": 58.39,
+      "risk_reward_1": 2.47,
+      "alert_epoch": 1792272600,
       "filled": false,
       "fill_epoch": null
     }
@@ -616,6 +586,33 @@
       "risk_reward": 3.06,
       "result": "TP",
       "resolved_epoch": 1792170900
+    },
+    {
+      "symbol": "XRPUSDT",
+      "strategy": "CRT",
+      "direction": "bullish",
+      "order_type": "Buy Limit",
+      "risk_reward": 2.06,
+      "result": "SL",
+      "resolved_epoch": 1792270800
+    },
+    {
+      "symbol": "ETHUSDT",
+      "strategy": "Impulse",
+      "direction": "bearish",
+      "order_type": "Sell Limit",
+      "risk_reward": 3.07,
+      "result": "TP",
+      "resolved_epoch": 1792272600
+    },
+    {
+      "symbol": "ETHUSDT",
+      "strategy": "CRT",
+      "direction": "bullish",
+      "order_type": "Buy Limit",
+      "risk_reward": 1.87,
+      "result": "SL",
+      "resolved_epoch": 1792272600
     }
   ]
 }
