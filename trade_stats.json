@@ -164,36 +164,6 @@
       "alert_epoch": 1792030500,
       "filled": false,
       "fill_epoch": null
-    },
-    "CRT_ETHUSDT_M15_1792296000_1792299600": {
-      "symbol": "ETHUSDT",
-      "strategy": "CRT",
-      "direction": "bullish",
-      "order_type": "Buy Stop",
-      "trigger_tf": "M5",
-      "entry": 2413.16,
-      "stop_loss": 2409.7945,
-      "take_profit_1": 2418.01,
-      "take_profit_2": 2423.57,
-      "risk_reward_1": 1.44,
-      "alert_epoch": 1792300200,
-      "filled": false,
-      "fill_epoch": null
-    },
-    "CRT_XRPUSDT_M15_1792296000_1792299600": {
-      "symbol": "XRPUSDT",
-      "strategy": "CRT",
-      "direction": "bullish",
-      "order_type": "Buy Stop",
-      "trigger_tf": "M5",
-      "entry": 1.29494,
-      "stop_loss": 1.2932530500000001,
-      "take_profit_1": 1.298105,
-      "take_profit_2": 1.30221,
-      "risk_reward_1": 1.88,
-      "alert_epoch": 1792300500,
-      "filled": false,
-      "fill_epoch": null
     }
   },
   "history": [
@@ -637,6 +607,24 @@
       "risk_reward": 2.47,
       "result": "TP",
       "resolved_epoch": 1792297800
+    },
+    {
+      "symbol": "ETHUSDT",
+      "strategy": "CRT",
+      "direction": "bullish",
+      "order_type": "Buy Stop",
+      "risk_reward": 1.44,
+      "result": "SL",
+      "resolved_epoch": 1792300800
+    },
+    {
+      "symbol": "XRPUSDT",
+      "strategy": "CRT",
+      "direction": "bullish",
+      "order_type": "Buy Stop",
+      "risk_reward": 1.88,
+      "result": "SL",
+      "resolved_epoch": 1792301100
     }
   ]
 }
