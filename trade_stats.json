@@ -72,8 +72,8 @@
       "take_profit_2": 2527.11,
       "risk_reward_1": 3.37,
       "alert_epoch": 1792072800,
-      "filled": false,
-      "fill_epoch": null
+      "filled": true,
+      "fill_epoch": 1792350000
     },
     "CRT_GBP_AUD_D1_1791676800_1792022400": {
       "symbol": "GBP_AUD",
