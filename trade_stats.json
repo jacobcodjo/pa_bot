@@ -177,6 +177,21 @@
       "take_profit_2": 80655.2,
       "risk_reward_1": 2.48,
       "alert_epoch": 1792332000,
+      "filled": true,
+      "fill_epoch": 1792364400
+    },
+    "CRT_XRPUSDT_H4_1792195200_1792324800": {
+      "symbol": "XRPUSDT",
+      "strategy": "CRT",
+      "direction": "bullish",
+      "order_type": "Buy Limit",
+      "trigger_tf": "H1",
+      "entry": 1.27562,
+      "stop_loss": 1.26678629,
+      "take_profit_1": 1.2896999999999998,
+      "take_profit_2": 1.3107,
+      "risk_reward_1": 1.59,
+      "alert_epoch": 1792364400,
       "filled": false,
       "fill_epoch": null
     }
