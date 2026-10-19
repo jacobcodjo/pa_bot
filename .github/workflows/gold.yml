@@ -1,0 +1,39 @@
+name: Gold Bot
+on:
+  workflow_dispatch:
+    inputs:
+      test:
+        description: "Envoyer un message de contrôle Telegram"
+        type: boolean
+        default: false
+concurrency:
+  group: gold-bot
+  cancel-in-progress: false
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: pip install -r requirements.txt
+      - uses: actions/cache@v4
+        with:
+          path: |
+            cache.json
+            state.json
+            trades.json
+            guard.json
+          key: gold-state-${{ github.run_id }}
+          restore-keys: gold-state-
+      - run: python gold.py
+        env:
+          NOTIFY_OK: ${{ github.event.inputs.test == 'true' && '1' || '0' }}
+          TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          ACCOUNT_BALANCE: ${{ vars.ACCOUNT_BALANCE }}
+          RISK_PCT: ${{ vars.RISK_PCT }}
+          STRATEGIES: ${{ vars.STRATEGIES }}

@@ -1,0 +1,48 @@
+name: Backtest Or
+on:
+  workflow_dispatch:
+    inputs:
+      days:
+        description: "Jours d'historique M5 à rejouer"
+        default: "120"
+      only:
+        description: "Stratégies (ex. S2,S3 ; vide = toutes)"
+        default: ""
+      spread_pct:
+        description: "Spread aller-retour en % du prix (or : environ 0.015)"
+        default: "0.015"
+      split:
+        description: "Séparer en deux périodes pour tester la stabilité (ex. 0.6, vide = non)"
+        default: "0.6"
+      grid:
+        description: "Grille facultative, séparée par des points-virgules (ex. strategies.S1_ADX_MIN=15,18,22;tracker.STRUCT_EXIT=true,false)"
+        default: ""
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: pip install -r requirements.txt
+      - name: Backtest
+        env:
+          DAYS: ${{ github.event.inputs.days }}
+          ONLY: ${{ github.event.inputs.only }}
+          SPREAD: ${{ github.event.inputs.spread_pct }}
+          SPLIT: ${{ github.event.inputs.split }}
+          GRID: ${{ github.event.inputs.grid }}
+          TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: |
+          args=(--days "$DAYS" --spread-pct "$SPREAD" --telegram)
+          if [ -n "$ONLY" ]; then args+=(--only "$ONLY"); fi
+          if [ -n "$SPLIT" ]; then args+=(--split "$SPLIT"); fi
+          if [ -n "$GRID" ]; then
+            IFS=';' read -ra sets <<< "$GRID"
+            for s in "${sets[@]}"; do args+=(--set "$s"); done
+          fi
+          python backtest.py "${args[@]}"
