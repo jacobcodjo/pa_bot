@@ -1,0 +1,4 @@
+[
+  {"start": "2026-10-28T17:30:00Z", "end": "2026-10-28T19:30:00Z", "note": "FOMC", "currencies": ["USD"]},
+  {"start": "2026-11-06T13:00:00Z", "end": "2026-11-06T14:30:00Z", "note": "NFP", "currencies": ["USD"]}
+]

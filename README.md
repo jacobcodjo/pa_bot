@@ -1,249 +1,75 @@
-# Bot Price Action (Forex / Or / Crypto)
+# Bot or (XAUUSD)
 
-Bot d'alertes Telegram avec **deux stratégies indépendantes**, qui tournent
-en parallèle sur chaque symbole -- chaque alerte précise dans le message
-laquelle des deux l'a déclenchée :
+Bot d'alertes Telegram dédié à l'or, avec quatre stratégies propres à ce marché (détail précis dans
+[STRATEGIES.md](STRATEGIES.md)). Il reprend l'architecture du bot CRT/Impulsion (client Deriv robuste, suivi
+des trades, garde-fous, graphique et boutons Telegram, backtest) mais **aucune de ses stratégies**.
 
-- **Impulse** : tendance de fond (HTF) -> jambe impulsive dans le sens de la
-  tendance -> zone Fibonacci de correction 61.8%-79% -> cassure de structure
-  (trigger). Règles identiques à l'ancien bot Impulse (`strategy.py`).
-- **CRT** (Candle Range Trading) : range de référence (HTF) -> sweep de
-  liquidité (manipulation) + Fair Value Gap / Order Block (MTF) -> cassure de
-  structure (confirmation, LTF). Règles identiques à l'ancien bot CRT
-  (`crt_strategy.py`). Pour la **crypto uniquement**, un niveau de cascade
-  supplémentaire (H1 -> M15 -> confirmation M5) est actif, comme dans l'ancien
-  bot -- non appliqué au forex/or pour ne pas alourdir le quota Twelve Data
-  (le M5 se rafraîchit 3x plus souvent que le M15). Kraken n'a pas cette
-  contrainte de quota, donc aucun risque côté crypto.
+| Code | Stratégie | Unités de temps |
+|---|---|---|
+| S1 | Tendance + repli | H4 > H1 > M15 |
+| S2 | Cassure de la plage asiatique | M15 |
+| S3 | Prise de liquidité + CHoCH | M15 > M5 |
+| S4 | Retour à la moyenne en range | H1 > M15 |
 
-## Sources de données -- pourquoi pas OANDA ni websocket Deriv
+Le bot **n'exécute aucun ordre** : il envoie des alertes (entrée, stop, TP1 à TP3 avec ratio, lot suggéré,
+graphique) et suit leur résultat en R. Aucune stratégie n'est garantie ; les paramètres sont des points de
+départ à valider par backtest.
 
-1. **Forex + Or : Twelve Data**, pas OANDA. OANDA est un *broker* : il exige
-   un compte de trading (même "practice") et n'accepte pas les clients de
-   nombreux pays (dont la plupart des pays d'Afrique de l'Ouest -- ce n'est
-   pas un problème temporaire, leur propre sélecteur de pays ne les liste
-   pas). Twelve Data n'est qu'un **fournisseur de données de marché** :
-   inscription par simple email sur twelvedata.com, sans compte de trading
-   ni vérification d'identité, utilisable depuis n'importe où.
-2. **Crypto : Kraken** (API publique, sans clé). Pas Binance : l'API publique
-   de Binance renvoie une erreur 451 depuis les adresses IP des datacenters
-   cloud américains (Azure/AWS) -- exactement l'infrastructure des runners
-   GitHub Actions. Ce n'est pas un problème de quota, Binance bloque la
-   connexion à la source ; aucune retentative n'y change rien. Kraken
-   n'applique pas ce type de restriction.
-3. **Plus de websocket.** Chaque bougie est récupérée par une simple requête
-   HTTP -- pas de connexion persistante à travers Cloudflare (source des
-   rejets rencontrés avec l'ancien bot Deriv), et pas besoin d'en garder une
-   ouverte puisque le bot tourne par cron toutes les 5 min.
+## Fichiers
 
-### Fréquence du scan (5 minutes)
-
-Le bot tourne toutes les 5 minutes. Ça n'augmente pas la charge sur Twelve
-Data : le cache est basé sur la durée réelle de chaque bougie (une M15 reste
-valide 15 minutes, peu importe combien de fois le script tourne entre-temps),
-donc le nombre réel d'appels API par jour reste quasiment identique à un
-scan moins fréquent -- seul le délai de détection d'un nouveau setup est
-réduit (jusqu'à 5 min au lieu de 15). Le facteur qui aurait pu limiter cette
-fréquence est le quota de minutes GitHub Actions (2000 min/mois gratuites
-sur un dépôt privé) -- sur un **dépôt public**, ces minutes sont illimitées
-et gratuites, donc aucune contrainte de ce côté.
-
-### Outlook hebdomadaire (week-end)
-
-Pendant la fermeture du forex (voir ci-dessus), le bot envoie **une seule
-fois par week-end** un message récapitulatif du biais directionnel de fond
-pour chaque actif -- forex/or (dernière clôture connue avant la fermeture)
-et crypto (qui continue de trader normalement) :
-
-```
-📅 Outlook de la semaine — 09:00 (UTC+1)
-
-Forex
-EUR/USD : 🟢 Haussier (D1) / 🟢 Haussier (W1)
-GBP/USD : 🔴 Baissier (D1) / ⚪ Range (W1)
-...
-
-Or
-XAU/USD : 🟢 Haussier (D1) / 🟢 Haussier (W1)
-
-Crypto
-BTCUSDT : 🟢 Haussier (D1) / ⚪ Range (W1)
-...
-```
-
-Ce n'est pas une troisième stratégie de trading : c'est une lecture de la
-tendance de fond (même logique que celle utilisée par Impulse et CRT en
-interne), sans setup d'entrée/sortie associé -- juste un repère pour préparer
-la semaine à venir. Envoyé dès la fermeture du vendredi soir, avec un
-marqueur (`weekly_outlook_state.json`) qui empêche tout renvoi le reste du
-week-end.
-
-**Rafraîchissement crypto du dimanche.** Contrairement au forex qui reste
-figé sur la même clôture jusqu'à lundi, la crypto continue de trader tout le
-week-end -- la lecture du vendredi soir devient donc de moins en moins
-pertinente pour elle au fil du week-end. Un second message, crypto
-uniquement, est donc envoyé le dimanche à partir de 20h00 UTC (avant la
-réouverture du forex ~22h00 UTC), avec son propre marqueur pour ne pas se
-répéter :
-
-```
-🔄 Mise à jour crypto (dimanche) — 21:00 (UTC+1)
-
-BTCUSDT : 🟢 Haussier (D1) / ⚪ Range (W1)
-...
-```
-
-### Fermeture du week-end (forex/or)
-
-Le forex et l'or ferment du vendredi ~22h00 UTC au dimanche ~22h00 UTC
-(`sessions.is_forex_market_open`). Pendant cette période, ces symboles sont
-automatiquement exclus du scan -- même si une fenêtre de killzone tombe
-techniquement sur un samedi ou dimanche (les killzones sont définies par
-heure de la journée, sans notion de jour de la semaine). La crypto continue
-de tourner normalement, 24/7. Ça évite de gaspiller du quota Twelve Data à
-re-télécharger des bougies figées sur un marché fermé.
-
-### Limite du palier gratuit Twelve Data et cache
-
-Le palier gratuit Twelve Data est limité à **800 requêtes/jour ET 8/minute**.
-Cette seconde limite est stricte : au moindre dépassement, l'API répond par
-une erreur 429 ("Too Many Requests"). `twelvedata_client.py` espace donc
-chaque requête d'environ 8 secondes en interne, quel que soit le nombre de
-symboles à scanner -- un premier scan à froid (cache vide, ~14 paires forex x
-4 timeframes) peut ainsi prendre plusieurs minutes, c'est normal et attendu.
-En plus de ça, `data_client.py` garde un **cache disque**
-(`candle_cache.json`) : une bougie n'est re-téléchargée que lorsque sa
-période est révolue (une H4 n'est refetchée qu'après 4h, une D1 qu'après
-24h, etc.) -- seule la M15 est vraiment retéléchargée à chaque passage, ce
-qui rend les scans suivants bien plus rapides. Si le quota venait quand même
-à être dépassé un jour très chargé, le bot retombe automatiquement sur le
-cache existant (même expiré) plutôt que d'échouer. Si besoin de plus de
-marge, le palier payant Twelve Data (à partir de ~66 $/mois) lève la limite
-par minute.
-
-## Filtre killzones (forex/or), avec fuseau horaire automatique
-
-Le forex/or n'est scanné que pendant la session actuellement active (voir
-`sessions.py` / `config.py`) :
-
-| Killzone   | Fenêtre (heure locale)            | Symboles                        |
-|------------|-------------------------------------|----------------------------------|
-| Asiatique  | 09h00 - 13h00 (Asia/Tokyo)           | Paires JPY, AUD, NZD            |
-| Londres    | 08h00 - 11h00 (Europe/London)        | EUR, GBP, CHF, or                |
-| New York   | 08h00 - 11h00 (America/New_York)     | Paires USD majeures, or          |
-
-**La crypto (BTC, ETH, LTC, XRP) n'est pas soumise aux killzones** : elle
-trade 24/7, elle est donc scannée à chaque passage, quelle que soit l'heure
-(`ALWAYS_ON_SYMBOLS` dans `config.py`) -- les alertes crypto affichent "24/7"
-au lieu du nom d'une session.
-
-Chaque fenêtre killzone est définie dans le fuseau **local** de sa propre
-place financière (via le module `zoneinfo` de Python), pas en UTC+1 fixe : le
-changement d'heure (DST) de Londres et New York est donc géré
-**automatiquement**, sans aucun réglage à refaire quand l'Europe ou les
-Etats-Unis basculent heure d'été/hiver (à des dates différentes l'une de
-l'autre). Le Japon n'observe pas le changement d'heure, sa fenêtre reste
-stable toute l'année.
-
-Les messages Telegram affichent l'heure en WAT (UTC+1, Afrique de l'Ouest,
-fixe toute l'année) via `DISPLAY_TZ` dans `config.py`.
-
-### Impulse 24/7, y compris hors killzone (CRT reste limité aux killzones)
-
-Le tableau ci-dessus décrit le forex/or scanné en cascade **complète**
-(D1→H4→H1→M15, les deux stratégies). En plus de ça, **Impulse seul** tourne
-aussi sur les 25 paires forex/or **en dehors** de leur killzone (sauf
-week-end) : une belle structure de tendance peut se former à n'importe quelle
-heure, contrairement à CRT qui dépend vraiment des ouvertures de session
-(sweep de liquidité institutionnelle) et reste donc limité aux killzones.
-
-Pour ne consommer **aucun quota Twelve Data supplémentaire**, ce passage
-"hors killzone" :
-- rafraîchit le D1 normalement (coût négligible : 1 requête/jour/symbole) ;
-- lit le H4 et le H1 **depuis le cache existant, sans jamais forcer de
-  nouvel appel réseau** -- au prix de données potentiellement un peu datées
-  (aussi fraîches que la dernière fois que ce symbole était dans sa
-  killzone) ;
-- ne récupère jamais le M15 -- le palier de cascade H4 (qui a besoin du M15
-  comme trigger) est donc naturellement ignoré ici ; seuls les paliers W1 et
-  D1 (triggers H4/H1) peuvent produire un setup hors killzone.
-
-Ces alertes affichent "Hors Killzone" à la place du nom d'une session.
+| Fichier | Rôle |
+|---|---|
+| `gold.py` | Scan, client Deriv (limites de requêtes, reconnexion), alertes et commandes Telegram, suivi |
+| `strategies.py` | Les 4 stratégies, indicateurs (EMA, ATR, ADX, RSI, Bollinger, swings), sessions |
+| `tracker.py` | Suivi des trades : TP1/TP2/TP3, stop à l'entrée, sorties de structure et au temps, statistiques |
+| `guard.py` | Fenêtres sans alerte (news USD, rollover, week-end), limites de risque, lot, santé du bot, bilan |
+| `charts.py` | Graphique joint à l'alerte |
+| `backtest.py` | Rejeu M5 des 4 stratégies, par stratégie, avec deux périodes et grille de réglages |
+| `STRATEGIES.md` | Règles précises de chaque stratégie |
+| `.github/workflows/gold.yml` | Scan (déclenché par un cron externe) |
+| `.github/workflows/backtest.yml` | Backtest manuel |
 
 ## Installation
 
-```
-pip install -r requirements.txt
-```
+1. Crée un dépôt GitHub avec le contenu de ce dossier (le dossier `.github/workflows` inclus).
+2. **Settings > Secrets and variables > Actions** : secrets `TELEGRAM_TOKEN` et `TELEGRAM_CHAT_ID`.
+3. Variables facultatives (onglet Variables) :
+   - `ACCOUNT_BALANCE` et `RISK_PCT` (ex. 10000 et 1) : affichent le lot suggéré (100 oz par lot ; vérifie sur ta plateforme).
+   - `STRATEGIES` : liste à activer, ex. `S2,S3` (défaut : `S1,S2,S3,S4`).
+4. Le workflow n'a pas de `schedule` : déclenche-le toutes les 5 minutes avec ton cron externe
+   (`workflow_dispatch`), comme pour l'ancien bot.
+5. Lance une fois le workflow avec `test = true` : tu reçois un message de contrôle avec l'entonnoir.
 
-## Variables d'environnement / secrets nécessaires
+Les fichiers d'état (`cache.json`, `state.json`, `trades.json`, `guard.json`) sont conservés par le cache GitHub.
+Pour les jours d'annonces non couverts par le calendrier automatique, copie `news.example.json` en `news.json`.
 
-| Variable                 | Description                                              |
-|---------------------------|-----------------------------------------------------------|
-| `TWELVEDATA_API_KEY`       | Clé API Twelve Data (compte gratuit)                       |
-| `PA_TELEGRAM_BOT_TOKEN`    | Token du bot Telegram                                      |
-| `PA_TELEGRAM_CHAT_ID`      | ID du chat/canal Telegram cible                            |
+## Commandes Telegram
 
-Pour obtenir une clé Twelve Data : créer un compte gratuit sur
-twelvedata.com (email + mot de passe, aucune vérification d'identité), puis
-copier la clé API affichée sur le tableau de bord.
+Boutons **Pris / Ignoré** sous chaque alerte, et : `/pris N`, `/ignore N`, `/r N X` (ton résultat réel du
+trade #N en R, ex. `/r 12 -0.8`), `/bilan` (30 derniers jours, par stratégie). Les commandes sont lues à chaque
+scan (réponse sous 5 minutes).
 
-Sur GitHub : les trois secrets vont dans **Settings -> Secrets and
-variables -> Actions -> Secrets**.
+## Backtest
 
-## Déclenchement fiable via cron-job.org (recommandé)
+Workflow **Backtest Or** (ou en local : `python backtest.py --days 120 --split 0.6`).
 
-Le cron natif de GitHub Actions (`schedule`) est gardé en filet de sécurité,
-mais il est connu pour être peu fiable -- retards fréquents, surtout aux
-heures de forte charge sur GitHub. Comme sur l'ancien bot, il vaut mieux
-déclencher le scan depuis un service de cron externe.
+- Rejoue les mêmes fonctions que le bot en direct, sans regarder le futur, avec un spread (défaut 0,015 %).
+- Rapport par stratégie, sens, session, alignement H4, résultat, et stabilité entre deux périodes.
+- `--only S2,S3` pour une stratégie ; `--set strategies.S1_ADX_MIN=15,18,22` pour une grille ; `--source csv`
+  pour tes propres données ; `--source sim` pour un contrôle de bon sens sur marche aléatoire.
+- Il faut environ 25 jours d'échauffement (EMA 200 du H4) : demande `--days` en plus.
 
-1. Crée un token GitHub : **Settings (du compte, pas du dépôt) -> Developer
-   settings -> Personal access tokens -> Fine-grained tokens** -> génère-en
-   un avec accès en écriture (`Contents` + `Actions`) sur ce dépôt
-   uniquement.
-2. Sur cron-job.org, crée une tâche toutes les 5 minutes qui envoie une
-   requête **POST** vers :
-   ```
-   https://api.github.com/repos/<utilisateur>/<depot>/dispatches
-   ```
-   avec ces en-têtes :
-   ```
-   Authorization: Bearer <TON_TOKEN_GITHUB>
-   Accept: application/vnd.github+json
-   Content-Type: application/json
-   ```
-   et ce corps de requête :
-   ```json
-   {"event_type": "external-cron"}
-   ```
+**Ce que le backtest peut et ne peut pas dire** : sous quelques centaines de trades, un taux de gain n'est que
+du bruit. Retiens une stratégie seulement si l'espérance est positive sur les deux périodes, avec un intervalle
+de confiance qui exclut zéro, et après avoir ajouté ton vrai spread. Une stratégie à quelques dizaines de
+trades n'est pas évaluable.
 
-Ça déclenche l'événement `repository_dispatch` du workflow, qui lance le
-scan immédiatement -- exactement le même principe que sur l'ancien bot.
+## Ce qui a été vérifié, et ce qui ne l'a pas été
 
-## Lancer un scan manuellement
+Vérifié (données simulées, sans accès réseau) : le code s'exécute de bout en bout, les 4 stratégies produisent des
+signaux, le suivi (TP1/TP2/TP3, stop, doublons), le message, le lot et le graphique fonctionnent, et sur une marche
+aléatoire l'espérance est proche de zéro (pas de gain « gratuit » dans le code).
 
-```
-python main.py
-```
-
-Si aucune killzone n'est active au moment de l'exécution, le script ne fait
-aucun appel API et se termine immédiatement.
-
-## Structure
-
-- `config.py` -- symboles, killzones, paramètres des deux stratégies
-- `sessions.py` -- détection de la killzone active (fuseau auto) et des symboles associés
-- `twelvedata_client.py` / `kraken_client.py` -- récupération des bougies
-- `data_client.py` -- routage Twelve Data/Kraken selon le symbole + cache disque
-- `common.py` -- primitives partagées (swings, tendance, gaps de weekend)
-- `strategy.py` -- stratégie Impulse (tendance + jambe impulsive + Fibonacci)
-- `crt_strategy.py` -- stratégie CRT (range + sweep + FVG/Order Block)
-- `state_manager.py` -- anti-doublon des alertes déjà envoyées (par stratégie)
-- `trade_tracker.py` -- suivi des trades (remplissage, TP/SL, statistiques par stratégie et classe d'actif)
-- `notifier.py` -- formatage (avec nom de la stratégie) et envoi des messages Telegram
-- `weekly_outlook.py` -- outlook hebdomadaire (biais D1/W1), envoyé une fois par week-end
-- `main.py` -- point d'entrée, lance les deux stratégies sur chaque symbole actif
-
-Cette logique est une implémentation simplifiée -- à backtester/affiner
-avant tout usage réel avec de l'argent.
+**Non vérifié** : la connexion à l'API Deriv et l'envoi Telegram (pas d'accès réseau pendant la rédaction), et
+surtout **la rentabilité sur l'or réel**. Fais d'abord un premier run avec `test = true`, puis un backtest sur
+Deriv, avant de suivre les alertes.
