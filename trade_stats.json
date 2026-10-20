@@ -179,6 +179,51 @@
       "alert_epoch": 1792454400,
       "filled": false,
       "fill_epoch": null
+    },
+    "CRT_ETHUSDT_H1_1792425600_1792443600": {
+      "symbol": "ETHUSDT",
+      "strategy": "CRT",
+      "direction": "bearish",
+      "order_type": "Sell Limit",
+      "trigger_tf": "M15",
+      "entry": 2404.79,
+      "stop_loss": 2407.6032,
+      "take_profit_1": 2395.1,
+      "take_profit_2": 2385.0,
+      "risk_reward_1": 3.44,
+      "alert_epoch": 1792455300,
+      "filled": false,
+      "fill_epoch": null
+    },
+    "CRT_LTCUSDT_H4_1792281600_1792411200": {
+      "symbol": "LTCUSDT",
+      "strategy": "CRT",
+      "direction": "bearish",
+      "order_type": "Sell Limit",
+      "trigger_tf": "H1",
+      "entry": 59.53,
+      "stop_loss": 60.44020499999999,
+      "take_profit_1": 58.335,
+      "take_profit_2": 56.65,
+      "risk_reward_1": 1.31,
+      "alert_epoch": 1792454400,
+      "filled": false,
+      "fill_epoch": null
+    },
+    "CRT_XRPUSDT_H4_1792281600_1792411200": {
+      "symbol": "XRPUSDT",
+      "strategy": "CRT",
+      "direction": "bearish",
+      "order_type": "Sell Limit",
+      "trigger_tf": "H1",
+      "entry": 1.30118,
+      "stop_loss": 1.31441688,
+      "take_profit_1": 1.28165,
+      "take_profit_2": 1.25477,
+      "risk_reward_1": 1.48,
+      "alert_epoch": 1792454400,
+      "filled": false,
+      "fill_epoch": null
     }
   },
   "history": [
