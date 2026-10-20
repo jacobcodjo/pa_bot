@@ -239,6 +239,36 @@
       "alert_epoch": 1792475100,
       "filled": false,
       "fill_epoch": null
+    },
+    "Impulse_LTCUSDT_H1_1791964800_1791986400": {
+      "symbol": "LTCUSDT",
+      "strategy": "Impulse",
+      "direction": "bearish",
+      "order_type": "Sell Limit",
+      "trigger_tf": "M15",
+      "entry": 61.12808,
+      "stop_loss": 62.232169999999996,
+      "take_profit_1": 57.69256,
+      "take_profit_2": 56.474639999999994,
+      "risk_reward_1": 3.11,
+      "alert_epoch": 1792162800,
+      "filled": false,
+      "fill_epoch": null
+    },
+    "Impulse_LTCUSDT_H1_1791997200_1792029600": {
+      "symbol": "LTCUSDT",
+      "strategy": "Impulse",
+      "direction": "bearish",
+      "order_type": "Sell Limit",
+      "trigger_tf": "M15",
+      "entry": 59.158240000000006,
+      "stop_loss": 60.049989999999994,
+      "take_profit_1": 56.41568,
+      "take_profit_2": 55.443419999999996,
+      "risk_reward_1": 3.08,
+      "alert_epoch": 1792351800,
+      "filled": false,
+      "fill_epoch": null
     }
   },
   "history": [
