@@ -224,6 +224,21 @@
       "alert_epoch": 1792498500,
       "filled": false,
       "fill_epoch": null
+    },
+    "CRT_BTCUSDT_H1_1792468800_1792494000": {
+      "symbol": "BTCUSDT",
+      "strategy": "CRT",
+      "direction": "bullish",
+      "order_type": "Buy Limit",
+      "trigger_tf": "M15",
+      "entry": 81436.0,
+      "stop_loss": 81302.02865000001,
+      "take_profit_1": 81760.25,
+      "take_profit_2": 82157.5,
+      "risk_reward_1": 2.42,
+      "alert_epoch": 1792499400,
+      "filled": false,
+      "fill_epoch": null
     }
   },
   "history": [
