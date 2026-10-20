@@ -37,3 +37,4 @@ jobs:
           ACCOUNT_BALANCE: ${{ vars.ACCOUNT_BALANCE }}
           RISK_PCT: ${{ vars.RISK_PCT }}
           STRATEGIES: ${{ vars.STRATEGIES }}
+          SYMBOLS: ${{ vars.SYMBOLS }}

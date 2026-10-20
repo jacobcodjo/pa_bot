@@ -2,6 +2,9 @@ name: Backtest Or
 on:
   workflow_dispatch:
     inputs:
+      sym:
+        description: "Actifs séparés par des virgules (ex. frxXAUUSD,frxEURUSD) ou all (or + 7 majeures + BTC + ETH)"
+        default: "frxXAUUSD"
       days:
         description: "Jours d'historique M5 à rejouer"
         default: "120"
@@ -9,8 +12,8 @@ on:
         description: "Stratégies (ex. S2,S3 ; vide = toutes)"
         default: ""
       spread_pct:
-        description: "Spread aller-retour en % du prix (or : environ 0.015)"
-        default: "0.015"
+        description: "Spread en % du prix (vide = défaut : or 0.015, majeures 0.006, BTC/ETH 0.05)"
+        default: ""
       split:
         description: "Séparer en deux périodes pour tester la stabilité (ex. 0.6, vide = non)"
         default: "0.6"
@@ -20,7 +23,7 @@ on:
 jobs:
   run:
     runs-on: ubuntu-latest
-    timeout-minutes: 180
+    timeout-minutes: 300
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -30,6 +33,7 @@ jobs:
       - run: pip install -r requirements.txt
       - name: Backtest
         env:
+          SYM: ${{ github.event.inputs.sym }}
           DAYS: ${{ github.event.inputs.days }}
           ONLY: ${{ github.event.inputs.only }}
           SPREAD: ${{ github.event.inputs.spread_pct }}
@@ -38,7 +42,8 @@ jobs:
           TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
         run: |
-          args=(--days "$DAYS" --spread-pct "$SPREAD" --telegram)
+          args=(--sym "$SYM" --days "$DAYS" --telegram)
+          if [ -n "$SPREAD" ]; then args+=(--spread-pct "$SPREAD"); fi
           if [ -n "$ONLY" ]; then args+=(--only "$ONLY"); fi
           if [ -n "$SPLIT" ]; then args+=(--split "$SPLIT"); fi
           if [ -n "$GRID" ]; then
