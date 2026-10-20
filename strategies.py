@@ -1,12 +1,12 @@
-"""Quatre stratégies pour l'or (XAUUSD). Toutes les règles sont décrites dans STRATEGIES.md.
+"""Quatre stratégies pour l'or (XAUUSD), les paires forex majeures et BTC/ETH. Toutes les règles sont décrites dans STRATEGIES.md.
 
 Module autonome : aucune entrée/sortie réseau. Chaque stratégie reçoit provide(tf) -> bougies du
 timeframe (la dernière est en formation) et renvoie un signal (dict) ou None.
 
-  S1  Tendance + repli            H4 (tendance) > H1 (repli 50-79 %) > M15 (cassure de structure)
-  S2  Cassure de la plage asiatique   M15, fenêtre 02h00-07h00 New York
-  S3  Prise de liquidité + CHoCH      M15 (sweep) > M5 (cassure de structure), killzones
-  S4  Retour à la moyenne en range    H1 (régime) > M15 (rejet des bandes de Bollinger)
+  S1  Trend Pullback              H4 (tendance) > H1 (repli 50-79 %) > M15 (cassure de structure)
+  S2  Asian Breakout                  M15, fenêtre 02h00-07h00 New York
+  S3  Sweep + CHoCH                   M15 (sweep) > M5 (cassure de structure), killzones
+  S4  Mean Reversion                  H1 (régime) > M15 (rejet des bandes de Bollinger)
 
 Les heures sont en heure de New York ; D1 et H4 ouvrent à 17h New York.
 """
@@ -28,7 +28,7 @@ TP_MULTS = (1.0, 2.0, 3.0)  # TP1, TP2, TP3 en multiples du risque (S1, S2, S3)
 
 KILLZONES_NY = [("Asie", 20, 24), ("Asie", 0, 2), ("Londres", 2, 5), ("New York", 7, 10), ("London Close", 10, 12)]
 
-# --- S1 Tendance + repli ---
+# --- S1 Trend Pullback ---
 S1_EMA_FAST, S1_EMA_SLOW = 50, 200     # EMA du H4
 S1_ADX_MIN = 18                        # ADX(14) du H4 minimal : écarte les marchés sans direction
 S1_SWING_H4 = 2                        # fractale H4 : 2 bougies de chaque côté
@@ -53,7 +53,7 @@ S3_PIVOT_BARS = 36                     # pivot M5 à moins de 36 bougies M5 (3 h
 S3_SESSIONS = ("Londres", "New York", "London Close")
 S3_RISK_CAP_H1 = 1.5
 
-# --- S4 Retour à la moyenne ---
+# --- S4 Mean Reversion ---
 S4_ADX_MAX = 20                        # ADX(14) du H1 sous 20
 S4_FLAT_ATR = 0.6                      # EMA 50 du H1 : variation sur 12 bougies sous 0,6 x ATR H1
 S4_BB_N, S4_BB_K = 20, 2.0
@@ -231,7 +231,7 @@ def h4_ema_bias(h4):
 
 
 # ==========================================================================
-# S1  Tendance + repli
+# S1  Trend Pullback
 # ==========================================================================
 def s1_trend(h4c):
     """'BUY' / 'SELL' / None. Tendance haussière : EMA50 > EMA200, clôture > EMA200, ADX >= 18 et dernier
@@ -254,7 +254,7 @@ def s1_trend(h4c):
     return None
 
 
-def scan_s1(provide, now, funnel):
+def scan_s1(provide, now, funnel, dec=2):
     h4, h1, m15 = provide("H4"), provide("H1"), provide("M15")
     if not (h4 and h1 and m15):
         return None
@@ -324,19 +324,19 @@ def scan_s1(provide, now, funnel):
     zone = sorted([top - S1_ZONE[0] * leg, top - S1_ZONE[1] * leg]) if buy else \
         sorted([top + S1_ZONE[0] * leg, top + S1_ZONE[1] * leg])
     return _signal(
-        "S1", "S1 Tendance + repli", d, price, lv, m15, "M15", f"{h1c[ti]['epoch']}|{pb['epoch']}|{tc['epoch']}",
+        "S1", "Trend Pullback", d, price, lv, m15, "M15", f"{h1c[ti]['epoch']}|{pb['epoch']}|{tc['epoch']}",
         [f"✅ Tendance H4 {'haussière' if buy else 'baissière'} (EMA 50/200, ADX {adx(h4c):.0f})",
-         f"✅ Repli H1 à {retr * 100:.0f} % de la jambe ({top:.2f} → {base:.2f})",
-         f"✅ Cassure de structure M15 à {level:.2f}"],
+         f"✅ Repli H1 à {retr * 100:.0f} % de la jambe ({top:.{dec}f} → {base:.{dec}f})",
+         f"✅ Cassure de structure M15 à {level:.{dec}f}"],
         lines=[{"y": level, "label": "Cassure", "kind": "range"}, {"y": pb_px, "label": "Repli", "kind": "sweep"}],
         zones=[{"lo": zone[0], "hi": zone[1], "label": "Fib 50-79 %", "kind": "fib"}],
         inval=pb_px, extra={"retr": round(retr, 2)})
 
 
 # ==========================================================================
-# S2  Cassure de la plage asiatique
+# S2  Asian Breakout (cassure de la plage asiatique)
 # ==========================================================================
-def scan_s2(provide, now, funnel):
+def scan_s2(provide, now, funnel, dec=2):
     h1, m15, h4 = provide("H1"), provide("M15"), provide("H4")
     if not (h1 and m15 and h4):
         return None
@@ -377,8 +377,8 @@ def scan_s2(provide, now, funnel):
         return None
     funnel["S2_signal"] += 1
     return _signal(
-        "S2", "S2 Cassure asiatique", d, price, lv, m15, "M15", f"{a0}|{tc['epoch']}",
-        [f"✅ Plage asiatique {lo:.2f} - {hi:.2f} ({(hi - lo) / a_h1:.1f} x ATR H1)",
+        "S2", "Asian Breakout", d, price, lv, m15, "M15", f"{a0}|{tc['epoch']}",
+        [f"✅ Plage asiatique {lo:.{dec}f} - {hi:.{dec}f} ({(hi - lo) / a_h1:.1f} x ATR H1)",
          f"✅ Première cassure {'haussière' if d == 'BUY' else 'baissière'} avec clôture forte",
          "✅ Sens aligné avec l'EMA 50 du H4"],
         lines=[{"y": hi, "label": "Asie H", "kind": "range"}, {"y": lo, "label": "Asie B", "kind": "range"}],
@@ -386,7 +386,7 @@ def scan_s2(provide, now, funnel):
 
 
 # ==========================================================================
-# S3  Prise de liquidité + cassure de structure (CHoCH)
+# S3  Sweep + CHoCH (prise de liquidité puis cassure de structure)
 # ==========================================================================
 def liquidity_levels(h1c, d1, m15c, now, a_h1):
     """[(nom, prix, 'high'|'low')] : PDH/PDL, extrêmes de la plage asiatique, equal highs/lows H1."""
@@ -407,7 +407,7 @@ def liquidity_levels(h1c, d1, m15c, now, a_h1):
     return out
 
 
-def scan_s3(provide, now, funnel):
+def scan_s3(provide, now, funnel, dec=2, kz=True):
     d1, h4, h1, m15, m5 = (provide(x) for x in ("D1", "H4", "H1", "M15", "M5"))
     if not (h1 and m15 and m5 and h4):
         return None
@@ -458,7 +458,7 @@ def scan_s3(provide, now, funnel):
     if body(tc) < DISP_MULT * avg:
         return None
     sess = session_name(tc["epoch"])
-    if sess not in S3_SESSIONS:
+    if kz and sess not in S3_SESSIONS:
         return None
     price = m5[-1]["close"]
     if is_late(d, price, tc["close"], a_m5):
@@ -475,23 +475,23 @@ def scan_s3(provide, now, funnel):
     opp.sort(key=lambda x: abs(x[1] - price))
     bias = h4_ema_bias(h4)
     aligned = bias == (-1 if d == "SELL" else 1)
-    details = [f"✅ Liquidité prise : {name} {px:.2f} (mèche {ext_px:.2f})",
-               f"✅ CHoCH M5 sous {pivot:.2f}" if d == "SELL" else f"✅ CHoCH M5 au-dessus de {pivot:.2f}",
+    details = [f"✅ Liquidité prise : {name} {px:.{dec}f} (mèche {ext_px:.{dec}f})",
+               f"✅ CHoCH M5 sous {pivot:.{dec}f}" if d == "SELL" else f"✅ CHoCH M5 au-dessus de {pivot:.{dec}f}",
                f"✅ Killzone {sess}",
                "✅ Aligné avec l'EMA 50 du H4" if aligned else "⚠️ Contre l'EMA 50 du H4 (contre-tendance)"]
     if opp:
-        details.append(f"Liquidité opposée  {opp[0][0]} {opp[0][1]:.2f}")
+        details.append(f"Liquidité opposée  {opp[0][0]} {opp[0][1]:.{dec}f}")
     return _signal(
-        "S3", "S3 Liquidité + CHoCH", d, price, lv, m5, "M5", f"{sc['epoch']}|{tc['epoch']}", details,
+        "S3", "Sweep + CHoCH", d, price, lv, m5, "M5", f"{sc['epoch']}|{tc['epoch']}", details,
         lines=[{"y": px, "label": name, "kind": "range"}, {"y": ext_px, "label": "Sweep", "kind": "sweep"},
                {"y": pivot, "label": "CHoCH", "kind": "info"}],
         inval=ext_px, session=sess, extra={"liq": name, "h4": "aligné" if aligned else "contre"})
 
 
 # ==========================================================================
-# S4  Retour à la moyenne en marché sans tendance
+# S4  Mean Reversion (marché sans tendance)
 # ==========================================================================
-def scan_s4(provide, now, funnel):
+def scan_s4(provide, now, funnel, dec=2, kz=True):
     h1, m15 = provide("H1"), provide("M15")
     if not (h1 and m15):
         return None
@@ -510,7 +510,7 @@ def scan_s4(provide, now, funnel):
     k = len(m15c) - 1
     for i in range(k, k - FRESH, -1):                 # bougie de rejet : l'une des 2 dernières clôturées
         c = m15c[i]
-        if not in_hours(c["epoch"], S4_HOURS):
+        if kz and not in_hours(c["epoch"], S4_HOURS):
             continue
         closes = [x["close"] for x in m15c[:i + 1]]
         bb = bollinger(closes, i)
@@ -540,7 +540,7 @@ def scan_s4(provide, now, funnel):
             return None
         funnel["S4_signal"] += 1
         return _signal(
-            "S4", "S4 Retour à la moyenne", d, price, lv, m15, "M15", f"{c['epoch']}",
+            "S4", "Mean Reversion", d, price, lv, m15, "M15", f"{c['epoch']}",
             [f"✅ Range H1 (ADX {a:.0f}, EMA 50 plate)",
              f"✅ Rejet de la bande de Bollinger {'basse' if d == 'BUY' else 'haute'} (RSI {min(recent_rsi) if d == 'BUY' else max(recent_rsi):.0f})",
              f"✅ Heure favorable ({session_name(c['epoch'])})"],
@@ -552,13 +552,15 @@ def scan_s4(provide, now, funnel):
 STRATEGIES = [("S1", scan_s1), ("S2", scan_s2), ("S3", scan_s3), ("S4", scan_s4)]
 
 
-def scan_all(provide, now, funnel, only=None):
-    """Évalue les stratégies (toutes, ou celles de `only`) et renvoie les signaux trouvés."""
+def scan_all(provide, now, funnel, only=None, dec=2, kz=True):
+    """Évalue les stratégies (toutes, ou celles de `only`) et renvoie les signaux trouvés.
+    dec : décimales du prix de l'actif (affichage uniquement).
+    kz : False pour un actif 24/7 (cryptos) : S3 et S4 ne sont alors pas limitées aux heures de session."""
     out = []
     for name, fn in STRATEGIES:
         if only and name not in only:
             continue
-        sig = fn(provide, now, funnel)
+        sig = fn(provide, now, funnel, dec, kz) if name in ("S3", "S4") else fn(provide, now, funnel, dec)
         if sig:
             funnel["signal"] += 1
             out.append(sig)

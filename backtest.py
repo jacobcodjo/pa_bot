@@ -1,4 +1,4 @@
-"""Backtest du bot or : rejoue les 4 stratégies sur de l'historique M5 de l'or.
+"""Backtest du bot : rejoue les 4 stratégies sur de l'historique M5 de l'or et des paires majeures.
 
 Le rejeu appelle les mêmes fonctions de scan que le bot en direct (gold.scan), les mêmes garde-fous
 (guard.risk_check, fenêtres sans alerte) et la même gestion des trades (tracker.advance). Toutes les
@@ -13,14 +13,16 @@ Outils de validation (pour ne pas se fier à un seul chiffre) :
     pour repérer un réglage qui ne marche que sur une seule période (sur-ajustement).
 
 Exemples :
-  python backtest.py --days 120 --spread-pct 0.015 --split 0.6
+  python backtest.py --days 120 --split 0.6                          (or seul, par défaut)
+  python backtest.py --sym frxXAUUSD,frxEURUSD,frxGBPUSD --days 120 --split 0.6
+  python backtest.py --sym all --days 120 --split 0.6                (or + 7 majeures + BTC + ETH)
   python backtest.py --days 180 --only S2,S3
   python backtest.py --days 120 --set strategies.S1_ADX_MIN=15,18,22 --set tracker.STRUCT_EXIT=true,false
   python backtest.py --source csv --file xauusd_m5.csv
   python backtest.py --source sim --days 60          (marche aléatoire : contrôle de bon sens)
 Un CSV contient les colonnes epoch,open,high,low,close (bougies M5, epoch en secondes, ordre croissant).
-Limites : spread constant, pas de glissement, calendrier économique non appliqué (rollover, vendredi soir
-et NFP le sont), un fichier CSV = un jeu de données.
+Limites : spread constant (défaut par actif : or 0,015 %, majeures 0,006 %, BTC/ETH 0,05 %), pas de glissement, calendrier
+économique non appliqué (rollover, vendredi soir et NFP le sont), un fichier CSV = un actif.
 """
 import argparse, csv, itertools, math, random, sys, time
 from collections import Counter
@@ -32,7 +34,8 @@ import strategies as S
 import tracker as T
 
 M5 = 300
-SYM = gold.SYMBOL
+SPREAD_DEFAULT = {"frxXAUUSD": 0.015, "cryBTCUSD": 0.05, "cryETHUSD": 0.05}   # % du prix (estimations)
+SPREAD_OTHER = 0.006                          # majeures
 
 
 # --------------------------------------------------------------------------
@@ -51,13 +54,13 @@ def load_csv(path):
     return out
 
 
-def load_deriv(days):
-    """Télécharge ~days jours de M5 de l'or en remontant par blocs de 5000 bougies."""
+def load_deriv(sym, days):
+    """Télécharge ~days jours de M5 de l'actif en remontant par blocs de 5000 bougies."""
     api, out, end = gold.Deriv(), {}, "latest"
     target = int(days * 288)
     try:
         while len(out) < target:
-            cs = api.candles(SYM, M5, count=5000, end=end)
+            cs = api.candles(sym, M5, count=5000, end=end)
             if not cs:
                 break
             new = {c["epoch"]: c for c in cs}
@@ -138,7 +141,7 @@ class Replay:
 # --------------------------------------------------------------------------
 # Exécution du backtest
 # --------------------------------------------------------------------------
-def run(m5, spread_pct=0.0, warmup_days=25, progress=True, split=None):
+def run(m5, sym, spread_pct=0.0, warmup_days=25, progress=True, split=None):
     """warmup_days : l'EMA 200 du H4 demande ~35 jours de bourse ; en dessous, S1 reste muet au début."""
     rp, funnel, sent = Replay(m5), Counter(), {}
     tr = {"active": {}, "closed": []}
@@ -157,9 +160,9 @@ def run(m5, spread_pct=0.0, warmup_days=25, progress=True, split=None):
                 T.archive(tr, key)
         # 2) cherche de nouveaux setups
         provide = lambda tf, force=False, _t=t: rp.provide(tf, _t)
-        for sig, _ in gold.scan(provide, now, sent, funnel, ()):
+        for sig, _ in gold.scan(sym, provide, now, sent, funnel, ()):
             sent[sig["key"]] = now
-            ok, why = G.risk_check(tr, SYM, sig["dir"], now, sig["label"])
+            ok, why = G.risk_check(tr, sym, sig["dir"], now, sig["label"])
             if not ok:
                 funnel["dedupe" if why == "dedupe" else "risk"] += 1
                 continue
@@ -168,11 +171,11 @@ def run(m5, spread_pct=0.0, warmup_days=25, progress=True, split=None):
             extra = dict(sig["extra"], session=sig["session"],
                          cost_r=(spread_pct / 100 * sig["entry"]) / risk if risk else 0.0)
             tr["active"][sig["key"]] = T.new_trade(
-                gold.BOT, sig["key"], SYM, gold.NAME, sig["dir"], sig["otype"], sig["entry"], sig["sl"],
-                sig["tp1"], sig["tp2"], sig["tp3"], sig["ltf"], M5, gold.DEC, sig["label"], now,
+                gold.BOT, sig["key"], sym, sig["name"], sig["dir"], sig["otype"], sig["entry"], sig["sl"],
+                sig["tp1"], sig["tp2"], sig["tp3"], sig["ltf"], M5, sig["dec"], sig["label"], now,
                 gold.TRADE_TTL, extra=extra, inval=sig["inval"], bar_secs=sig["gran"])
         if progress and (t - warm) % 5000 == 0:
-            print(f"  pas {t - warm}/{len(m5) - warm - 1} · {funnel['alert']} alertes · "
+            print(f"  {gold.name_of(sym)} · pas {t - warm}/{len(m5) - warm - 1} · {funnel['alert']} alertes · "
                   f"{time.time() - t_start:.0f}s", flush=True)
     for tk in tr["closed"]:
         tk["r"] = round(tk["r"] - tk.get("cost_r", 0.0), 3)      # coût du spread, en R
@@ -209,10 +212,27 @@ def breakdown(ts, key):
     return rows
 
 
-def report(tr, funnel, stats, days, spread_pct, split=None):
-    ts = tr["closed"]
-    pending = len(T.active_list(tr))
-    L = [f"BACKTEST OR · {days:g} jours · spread {spread_pct:g} % · stratégies {', '.join(gold.ENABLED)}",
+def run_all(datasets, spread_pct, warmup_days, split, progress=True):
+    """datasets : [(sym, m5)]. Retourne [(sym, tr, funnel, stats)]. spread_pct None : défaut par actif."""
+    res = []
+    for sym, m5 in datasets:
+        sp = spread_pct if spread_pct is not None else SPREAD_DEFAULT.get(sym, SPREAD_OTHER)
+        tr, funnel, stats = run(m5, sym, sp, warmup_days, progress, split)
+        res.append((sym, tr, funnel, stats))
+    return res
+
+
+def report(results, days, spread_pct, split=None):
+    """results : liste de (sym, tr, funnel, stats). Retourne les lignes du rapport."""
+    ts = [t for (_, tr, _, _) in results for t in tr["closed"]]
+    funnel, stats = Counter(), Counter()
+    for _, _, f, st in results:
+        funnel.update(f)
+        stats.update(st)
+    pending = sum(len(T.active_list(tr)) for (_, tr, _, _) in results)
+    sp = f"{spread_pct:g} %" if spread_pct is not None else "par défaut (or 0,015 %, majeures 0,006 %, BTC/ETH 0,05 %)"
+    L = [f"BACKTEST · {', '.join(gold.name_of(r[0]) for r in results)} · {days:g} jours · spread {sp} · "
+         f"stratégies {', '.join(gold.ENABLED)}",
          "Entonnoir : " + G.funnel_text(funnel),
          f"{funnel['alert']} alertes (ordres au marché) ; {pending} trade(s) encore ouvert(s). "
          "L'entonnoir compte des passages de scan, pas des setups distincts."]
@@ -221,9 +241,14 @@ def report(tr, funnel, stats, days, spread_pct, split=None):
         return L + ["Aucun trade clôturé : pas assez de signaux sur cette période."]
     L.append(T.fmt_summary("TOTAL", s))
     L.append(verdict([t["r"] for t in ts]))
+    if len(results) > 1:
+        L.append("Par actif :")
+        for sym, tr, _, _ in results:
+            sub = T.summarize(tr["closed"])
+            L.append(T.fmt_summary(f"  {gold.name_of(sym)}", sub) if sub else f"  {gold.name_of(sym)} : aucun trade")
     L.append("Par stratégie :")
     L += breakdown(ts, "cascade")
-    for key in ["dir", "session", "liq", "h4", "result"] + (["period"] if split else []):
+    for key in ["dir", "session", "liq", "h4", "tend_d1", "tend_h4", "result"] + (["period"] if split else []):
         L += breakdown(ts, key)
     if split:
         p1, p2 = [t["r"] for t in ts if t.get("period") == "1"], [t["r"] for t in ts if t.get("period") == "2"]
@@ -233,8 +258,8 @@ def report(tr, funnel, stats, days, spread_pct, split=None):
             L.append(f"Stabilité : période 1 {m1:+.2f} R/trade ({len(p1)} trades), période 2 {m2:+.2f} R/trade "
                      f"({len(p2)} trades) : {'même signe' if stable else 'SIGNES OPPOSÉS, résultat peu fiable'}.")
     L += ["", f"Lecture : sous {s['n']} trades, ±{100 * math.sqrt(0.25 / s['n']):.0f} points sur le taux de gain "
-              "sont du bruit. Un avantage réel se voit sur plusieurs centaines de trades et plusieurs périodes. "
-              "Une stratégie qui ne produit que quelques dizaines de trades n'est pas évaluable."]
+              "sont du bruit. Un avantage réel se voit sur plusieurs centaines de trades, plusieurs actifs et "
+              "plusieurs périodes. Une stratégie qui ne produit que quelques dizaines de trades n'est pas évaluable."]
     return L
 
 
@@ -269,7 +294,7 @@ def parse_sets(items):
     return out
 
 
-def grid_report(m5, sets, a):
+def grid_report(datasets, sets, a):
     combos = list(itertools.product(*[vals for _, _, vals in sets]))
     if len(combos) > 30:
         sys.exit(f"Grille trop grande ({len(combos)} combinaisons, maximum 30).")
@@ -279,17 +304,18 @@ def grid_report(m5, sets, a):
         for (m, n, _), v in zip(sets, combo):
             setattr(MODULES[m], n, v)
         try:
-            tr, _, _ = run(m5, a.spread_pct, a.warmup_days, False, a.split)
+            res = run_all(datasets, a.spread_pct, a.warmup_days, a.split, progress=False)
         finally:
             for mod, n, old in saved:
                 setattr(mod, n, old)
-        s = T.summarize(tr["closed"])
+        closed = [t for (_, tr, _, _) in res for t in tr["closed"]]
+        s = T.summarize(closed)
         label = " ".join(f"{m}.{n}={v}" for (m, n, _), v in zip(sets, combo))
         per = ""
         if a.split:
             ms = []
             for p in ("1", "2"):
-                rs = [t["r"] for t in tr["closed"] if t.get("period") == p]
+                rs = [t["r"] for t in closed if t.get("period") == p]
                 ms.append(f"{sum(rs) / len(rs):+.2f}" if rs else "n/a")
             per = f" | P1 {ms[0]} · P2 {ms[1]} R/trade"
         pf = "∞" if s and s["pf"] == float("inf") else (f"{s['pf']:.2f}" if s else "")
@@ -299,7 +325,7 @@ def grid_report(m5, sets, a):
     note = ["", "Choisis un réglage seulement si P1 et P2 sont tous deux positifs et si l'écart avec les voisins est",
             "faible. Un réglage excellent sur une période et mauvais sur l'autre est du sur-ajustement."] if a.split else \
            ["", "Ajoute --split 0.6 pour voir la tenue de chaque réglage sur deux périodes (anti sur-ajustement)."]
-    return [f"GRILLE OR · {len(combos)} combinaisons"] + rows + note
+    return [f"GRILLE · {', '.join(gold.name_of(x) for x, _ in datasets)} · {len(combos)} combinaisons"] + rows + note
 
 
 def send_telegram(lines):
@@ -314,12 +340,14 @@ def send_telegram(lines):
 
 
 def main():
-    ap = argparse.ArgumentParser(description="Backtest du bot or sur historique M5")
+    ap = argparse.ArgumentParser(description="Backtest du bot (or + majeures) sur historique M5")
+    ap.add_argument("--sym", default=gold.GOLD, help="actifs séparés par des virgules, ou 'all' (or + 7 majeures + BTC + ETH)")
     ap.add_argument("--source", choices=["deriv", "csv", "sim"], default="deriv")
-    ap.add_argument("--file", help="CSV M5 (source csv)")
+    ap.add_argument("--file", help="CSV M5 (source csv, un seul actif)")
     ap.add_argument("--days", type=float, default=120)
     ap.add_argument("--only", help="stratégies à rejouer, ex. S2,S3 (défaut : toutes)")
-    ap.add_argument("--spread-pct", type=float, default=0.015, help="spread aller-retour en %% du prix (or : ~0,015)")
+    ap.add_argument("--spread-pct", type=float, default=None,
+                    help="spread en %% du prix (défaut : or 0,015, majeures 0,006, BTC/ETH 0,05)")
     ap.add_argument("--warmup-days", type=float, default=25)
     ap.add_argument("--split", type=float, default=None, help="fraction de la période pour la période 1 (ex. 0.6)")
     ap.add_argument("--set", action="append", help="grille : module.NOM=v1,v2 (répétable)")
@@ -331,24 +359,32 @@ def main():
         sys.exit("--split doit être compris entre 0.2 et 0.8")
     if a.only:
         gold.ENABLED = [x.strip().upper() for x in a.only.split(",") if x.strip()]
-    if a.source == "csv":
-        if not a.file:
-            sys.exit("--source csv demande --file")
-        m5 = load_csv(a.file)
-    elif a.source == "sim":
-        m5 = gen_sim(a.days + a.warmup_days, a.seed, a.vol)
-    else:
-        print(f"Téléchargement de {a.days:g} jours de M5 pour {SYM}…")
-        m5 = load_deriv(a.days + a.warmup_days)
-    if len(m5) < 2000:
-        sys.exit(f"Historique insuffisant ({len(m5)} bougies M5).")
-    print(f"{len(m5)} bougies M5 ({len(m5) / 288:.0f} jours)")
+    syms = gold.ALL_SYMBOLS if a.sym.strip().lower() == "all" else \
+        [x.strip() for x in a.sym.split(",") if x.strip()]
+    datasets = []
+    for k, sym in enumerate(syms):
+        if a.source == "csv":
+            if not a.file or len(syms) > 1:
+                sys.exit("--source csv demande --file et un seul actif")
+            m5 = load_csv(a.file)
+        elif a.source == "sim":
+            m5 = gen_sim(a.days + a.warmup_days, a.seed + k, a.vol)
+        else:
+            print(f"Téléchargement de {a.days:g} jours de M5 pour {sym}…")
+            m5 = load_deriv(sym, a.days + a.warmup_days)
+        if len(m5) < 2000:
+            print(f"{sym} : historique insuffisant ({len(m5)} bougies M5), actif ignoré.")
+            continue
+        print(f"{sym} : {len(m5)} bougies M5 ({len(m5) / 288:.0f} jours)")
+        datasets.append((sym, m5))
+    if not datasets:
+        sys.exit("Aucune donnée exploitable.")
     sets = parse_sets(a.set)
     if sets:
-        lines = grid_report(m5, sets, a)
+        lines = grid_report(datasets, sets, a)
     else:
-        tr, funnel, stats = run(m5, a.spread_pct, a.warmup_days, True, a.split)
-        lines = report(tr, funnel, stats, len(m5) / 288, a.spread_pct, a.split)
+        res = run_all(datasets, a.spread_pct, a.warmup_days, a.split)
+        lines = report(res, min(len(m5) for _, m5 in datasets) / 288, a.spread_pct, a.split)
     print("\n" + "=" * 60 + "\n" + "\n".join(lines))
     if a.telegram:
         send_telegram(lines)

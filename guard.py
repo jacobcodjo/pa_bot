@@ -1,5 +1,5 @@
-"""Garde-fous du bot or (XAUUSD) : fenêtres sans alerte (news USD, rollover, week-end),
-un seul trade actif par stratégie et par sens, exposition nette maximale sur l'or, plafond de pertes
+"""Garde-fous du bot (or, paires majeures, BTC et ETH) : fenêtres sans alerte (news, rollover, week-end),
+un seul trade actif par actif, stratégie et sens, exposition USD corrélée, plafond de pertes
 journalier, calcul du lot, surveillance du bot, entonnoir de filtres et bilan hebdomadaire.
 Autonome : aucun import de bot.py (les fonctions d'envoi sont passées en argument)."""
 import json, math, os, re
@@ -13,8 +13,8 @@ GUARD_FILE = "guard.json"
 NEWS_FILE = "news.json"
 
 # --- Limites de risque ---
-MAX_OPEN_TRADES = 4        # positions ouvertes en même temps (toutes stratégies confondues)
-GROUP_LIMIT = 2            # exposition nette maximale sur l'or, dans le même sens
+MAX_OPEN_TRADES = 8        # positions ouvertes en même temps (tous actifs et stratégies confondus)
+GROUP_LIMIT = 2            # exposition nette maximale par groupe corrélé (USD, cryptos), même sens
 MAX_DAILY_LOSS_R = 3.0     # plus de nouvelles alertes si la perte du jour atteint 3 R (jour = 17h NY)
 # --- Fenêtres sans alerte (forex et or) ---
 ROLLOVER = (16 * 60 + 55, 17 * 60 + 15)     # minutes NY : élargissement des spreads
@@ -29,7 +29,7 @@ CALENDAR_URLS = [u for u in (
 ) if u]
 CALENDAR_REFRESH = 6 * 3600     # le flux n'est interrogé qu'une fois toutes les 6 h
 CALENDAR_RETRY = 900            # nouvel essai après 15 min en cas d'échec
-CALENDAR_CURRENCIES = {"USD"}      # l'or réagit surtout aux annonces américaines
+CALENDAR_CURRENCIES = {"USD", "EUR", "GBP", "JPY", "CHF", "AUD", "CAD", "NZD"}
 NEWS_BEFORE_MIN = 15            # pas d'alerte 15 min avant un événement à fort impact
 NEWS_AFTER_MIN = 45             # ... ni 45 min après
 BIG_AFTER_MIN = 90              # 90 min après une décision de taux ou une conférence de presse
@@ -44,9 +44,9 @@ REPORT_EVERY = 7 * 86400   # bilan envoyé une fois par semaine
 
 FUNNEL_ORDER = ["data", "S1_tendance", "S1_repli", "S1_signal", "S2_range", "S2_signal", "S3_niveau", "S3_sweep",
                 "S3_signal", "S4_regime", "S4_signal", "signal", "stale", "blackout", "dedupe", "risk", "alert"]
-FUNNEL_LABEL = {"data": "données", "S1_tendance": "S1 tendance H4", "S1_repli": "S1 repli H1", "S1_signal": "S1 signal",
-                "S2_range": "S2 range asiatique", "S2_signal": "S2 signal", "S3_niveau": "S3 niveaux",
-                "S3_sweep": "S3 sweep", "S3_signal": "S3 signal", "S4_regime": "S4 range H1", "S4_signal": "S4 signal",
+FUNNEL_LABEL = {"data": "données", "S1_tendance": "Trend Pullback : tendance H4", "S1_repli": "repli H1", "S1_signal": "signal Trend Pullback",
+                "S2_range": "Asian Breakout : plage", "S2_signal": "signal Asian Breakout", "S3_niveau": "Sweep + CHoCH : niveaux",
+                "S3_sweep": "sweep", "S3_signal": "signal Sweep + CHoCH", "S4_regime": "Mean Reversion : range H1", "S4_signal": "signal Mean Reversion",
                 "signal": "signaux valides", "stale": "écartés (entrée tardive)", "blackout": "bloqués (news/horaire)",
                 "dedupe": "doublons", "risk": "bloqués (risque)", "alert": "alertes"}
 
@@ -163,6 +163,8 @@ def blackout(sym, now, news=()):
     for n in news:
         if n["start"] <= now <= n["end"] and (not n["cur"] or any(c in sym.upper() for c in n["cur"])):
             return f"news : {n['note']}"
+    if not sym.startswith("frx"):
+        return None                    # cryptos : marché 24/7, pas de rollover ni de fermeture hebdomadaire
     dt = datetime.fromtimestamp(now, NY)
     mins, wd = dt.hour * 60 + dt.minute, dt.weekday()
     if ROLLOVER[0] <= mins < ROLLOVER[1]:
@@ -179,22 +181,42 @@ def blackout(sym, now, news=()):
 # --------------------------------------------------------------------------
 # Doublons, exposition corrélée, plafond de pertes
 # --------------------------------------------------------------------------
-def exposure(d):
-    """+1 pour un achat d'or, -1 pour une vente."""
-    return 1 if d == "BUY" else -1
+def usd_sign(sym, d):
+    """+1 si le trade équivaut à être long USD, -1 s'il équivaut à être short USD, 0 sinon.
+    L'or (XAUUSD) est coté en USD : acheter l'or revient à vendre l'USD."""
+    s = sym.upper()
+    if not (s.startswith("FRX") and len(s) >= 9):
+        return 0
+    base, quote = s[3:6], s[6:9]
+    buy = 1 if d == "BUY" else -1
+    if quote == "USD":
+        return -buy
+    if base == "USD":
+        return buy
+    return 0
+
+
+def crypto_sign(sym, d):
+    """+1 pour un achat de crypto, -1 pour une vente, 0 pour un autre actif (BTC et ETH évoluent ensemble)."""
+    return (1 if d == "BUY" else -1) if sym.startswith("cry") else 0
 
 
 def risk_check(tr, sym, d, now, strat=None):
-    """Retourne (ok, motif). Contrôle : doublon (même stratégie, même sens), nombre de trades ouverts,
-    exposition nette sur l'or, plafond de perte journalier."""
+    """Retourne (ok, motif). Contrôle : doublon (même actif, stratégie et sens), nombre de trades ouverts,
+    exposition USD nette, plafond de perte journalier."""
     act = T.active_list(tr)
     if any(t["sym"] == sym and t["dir"] == d and t.get("cascade") == strat for t in act):
         return False, "dedupe"
     if len(act) >= MAX_OPEN_TRADES:
         return False, f"{MAX_OPEN_TRADES} trades déjà actifs"
-    net = sum(exposure(t["dir"]) for t in act if t["sym"] == sym)
-    if net * exposure(d) >= GROUP_LIMIT:
-        return False, "exposition or (même sens) au maximum"
+    sign = usd_sign(sym, d)
+    net = sum(usd_sign(t["sym"], t["dir"]) for t in act)
+    if sign and net * sign >= GROUP_LIMIT:
+        return False, "exposition USD (même sens) au maximum"
+    csign = crypto_sign(sym, d)
+    cnet = sum(crypto_sign(t["sym"], t["dir"]) for t in act)
+    if csign and cnet * csign >= GROUP_LIMIT:
+        return False, "exposition crypto (même sens) au maximum"
     if T.realized_r(tr, T.day_start(now)) <= -MAX_DAILY_LOSS_R:
         return False, f"perte journalière de {MAX_DAILY_LOSS_R:g} R atteinte"
     return True, ""
@@ -204,14 +226,19 @@ def risk_check(tr, sym, d, now, strat=None):
 # Taille de position (facultatif : variable d'environnement ACCOUNT_BALANCE)
 # --------------------------------------------------------------------------
 def contract_units(sym):
-    """Onces par lot standard : 100 pour l'or. Pour un autre contrat, renseigne LOT_UNITS_FRXXAUUSD."""
+    """Unités par lot standard : 100 onces pour l'or, 100 000 pour une paire forex, 1 pour une crypto. Autre contrat :
+    renseigne LOT_UNITS_<SYMBOLE> (ex. LOT_UNITS_FRXXAUUSD)."""
     env = os.getenv(f"LOT_UNITS_{sym.upper()}")
     if env:
         try:
             return float(env)
         except ValueError:
             return None
-    return 100.0 if sym == "frxXAUUSD" else None
+    if sym == "frxXAUUSD":
+        return 100.0
+    if sym.startswith("cry"):
+        return 1.0
+    return 100000.0 if sym.startswith("frx") else None
 
 
 def lot_size(sym, entry, sl, balance=None, risk_pct=None):
@@ -227,6 +254,8 @@ def lot_size(sym, entry, sl, balance=None, risk_pct=None):
     if balance <= 0 or not units or dist <= 0:
         return None
     loss_per_lot = dist * units
+    if sym.startswith("frx") and sym[6:9] != "USD":
+        loss_per_lot /= entry          # perte exprimée en devise de cotation -> USD
     lot = math.floor(balance * risk_pct / 100 / loss_per_lot * 100 + 1e-9) / 100
     return lot
 

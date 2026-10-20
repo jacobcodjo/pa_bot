@@ -1,7 +1,7 @@
-# Stratégies du bot or (XAUUSD)
+# Stratégies du bot (or, paires majeures, BTC et ETH)
 
 Quatre stratégies indépendantes, évaluées à chaque scan (toutes les 5 minutes). Chacune a son nom dans les
-alertes Telegram, son propre suivi et ses propres statistiques. Les noms entre parenthèses sont les
+alertes Telegram (le code S1 à S4 sert seulement aux réglages : variable `STRATEGIES`, option `--only`), son propre suivi et ses propres statistiques. Les noms entre parenthèses sont les
 paramètres de `strategies.py` (modifiables, et testables avec `backtest.py --set`).
 
 > **Important.** Aucune stratégie n'a un taux de réussite élevé garanti. Les valeurs ci-dessous sont des
@@ -9,12 +9,28 @@ paramètres de `strategies.py` (modifiables, et testables avec `backtest.py --se
 > (`backtest.yml`) sur plusieurs mois avant de t'y fier, et vérifie sur deux périodes (`--split 0.6`).
 > Ce document n'est pas un conseil financier.
 
+## Actifs
+
+L'or (`frxXAUUSD`), les 7 majeures (EURUSD, GBPUSD, USDJPY, USDCHF, AUDUSD, USDCAD, NZDUSD) et deux cryptos
+(`cryBTCUSD`, `cryETHUSD`). Les règles sont
+identiques pour tous : seuils en ATR, heures de New York, D1/H4 à 17h. Les stratégies ont été conçues pour l'or ;
+leur comportement sur chaque paire est à vérifier au backtest (`--sym all`), actif par actif. Les cryptos ont une volatilité et des spreads très différents de l'or : ne
+les juge pas sur les résultats des autres actifs. Exposition : l'or
+compte comme une position sur l'USD (acheter l'or = vendre l'USD), 2 trades au plus dans le même sens USD ;
+BTC et ETH forment un groupe : 2 trades au plus dans le même sens.
+
+**Cryptos** : marché 24h/24, 7j/7. Les heures de session (killzones de Sweep + CHoCH, heures favorables de
+Mean Reversion) ne s'appliquent pas à elles, et les fenêtres de rollover, vendredi soir, dimanche et NFP non plus.
+La plage asiatique (Asian Breakout) et les niveaux PDH/PDL gardent leur définition en heure de New York.
+
 ## Conventions communes
 
 - **Heures** : heure de New York. **D1 et H4 ouvrent à 17h New York** (reconstruits depuis le H1).
 - **Bougies clôturées** : toutes les conditions utilisent des bougies clôturées ; la bougie en formation ne
   sert qu'à connaître le prix actuel.
 - **Déclenchement récent** : la bougie de déclenchement doit être l'une des 2 dernières clôturées (`FRESH`).
+- **Tendance dans l'alerte** : chaque alerte indique la tendance D1 et H4 avec son âge (règles de `trend.py`,
+  voir plus bas), ✅ dans le sens du trade, ⚠️ à contre-sens. Information seulement, jamais un filtre.
 - **Entrée** : ordre **au marché**, au prix du scan. Si le prix a déjà fui de plus de 0,75 x ATR de la clôture
   de déclenchement (`CHASE_ATR`), le signal est écarté (« entrée tardive »).
 - **Stop** : au-delà de l'extrême de la structure, plus une marge de 0,15 x ATR (`BUF_ATR`). Risque minimal
@@ -25,13 +41,14 @@ paramètres de `strategies.py` (modifiables, et testables avec `backtest.py --se
   TP3. Sortie avant TP1 si une bougie clôture au-delà du niveau d'invalidation, ou après 150 bougies sans TP1.
   Si stop et cible sont touchés dans la même bougie, le stop est supposé touché en premier.
 - **Fenêtres sans alerte** : rollover 16h55-17h15, vendredi dès 15h30, ouverture de dimanche 17h-18h, NFP,
-  FOMC, annonces USD à fort impact (15 min avant, 45 min après ; 90 min après une décision de taux).
-- **Risque** : 4 trades ouverts au plus, exposition nette de 2 trades au plus dans le même sens, une seule
-  position par stratégie et par sens, plus d'alertes après -3 R sur la journée (17h NY à 17h NY).
+  FOMC, annonces à fort impact de la devise de l'actif (USD pour l'or ; les deux devises pour une paire),
+  15 min avant et 45 min après (90 min après une décision de taux).
+- **Risque** : 6 trades ouverts au plus, exposition USD nette de 2 trades au plus dans le même sens, une seule
+  position par actif, stratégie et sens, plus d'alertes après -3 R sur la journée (17h NY à 17h NY).
 
 ---
 
-## S1 · Tendance + repli (H4 > H1 > M15)
+## Trend Pullback (code S1) · H4 > H1 > M15
 
 **Idée** : trader dans le sens de la tendance H4, en entrant à la fin d'un repli de 50 à 85 % de la dernière
 jambe impulsive H1, quand le M15 confirme la reprise.
@@ -64,7 +81,7 @@ jambe impulsive H1, quand le M15 confirme la reprise.
 
 ---
 
-## S2 · Cassure de la plage asiatique (M15)
+## Asian Breakout (code S2) · M15
 
 **Idée** : l'or sort souvent de la plage calme de l'Asie à l'ouverture de Londres. On trade la **première**
 cassure propre, dans le sens de l'EMA 50 du H4.
@@ -86,7 +103,7 @@ TP2 deux fois, TP3 trois fois. Pas de niveau d'invalidation séparé (le stop fa
 
 ---
 
-## S3 · Prise de liquidité + cassure de structure (CHoCH) (M15 > M5)
+## Sweep + CHoCH (code S3) · M15 > M5
 
 **Idée** : le prix balaie un niveau où s'accumulent des stops, puis casse sa structure en sens inverse. On
 entre contre le balayage.
@@ -119,7 +136,7 @@ les deux cas (`h4 aligné` / `h4 contre`).
 
 ---
 
-## S4 · Retour à la moyenne en marché sans tendance (H1 > M15)
+## Mean Reversion (code S4) · H1 > M15
 
 **Idée** : quand l'or oscille sans direction, un rejet net des bandes de Bollinger ramène le prix vers la
 moyenne. C'est la stratégie la plus risquée si une tendance démarre : le régime est donc filtré strictement.
@@ -141,6 +158,13 @@ moyenne. C'est la stratégie la plus risquée si une tendance démarre : le rég
 **Invalidation** : clôture M15 au-delà de la mèche de rejet.
 
 ---
+
+## Récapitulatif de tendance (information, hors stratégies)
+
+Message quotidien après 17h15 New York : tendance D1 / H4 / H1 de chaque actif, avec son âge (naissante 1 jambe,
+établie 2-3, mûre 4 et plus). Règles de `trend.py` : dernier sommet et dernier creux plus hauts (plus bas pour une
+baisse), structure intacte, sommet précédent cassé par une clôture. Il est indépendant des filtres de tendance de
+Trend Pullback (EMA 50/200 du H4) : les deux lectures peuvent différer.
 
 ## Ce que le bot ne fait pas
 

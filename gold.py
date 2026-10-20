@@ -1,7 +1,7 @@
-"""Bot or (XAUUSD) : 4 stratégies, données Deriv, alertes Telegram, suivi des trades.
+"""Bot or (XAUUSD) + 7 paires forex majeures + BTC et ETH : 4 stratégies, données Deriv, alertes Telegram, suivi des trades.
 
 Stratégies (détail dans STRATEGIES.md) :
-  S1 Tendance + repli · S2 Cassure de la plage asiatique · S3 Liquidité + CHoCH · S4 Retour à la moyenne
+  Trend Pullback · S2 Cassure de la plage asiatique · Sweep + CHoCH · Mean Reversion
 Un passage = un scan (à déclencher toutes les 5 minutes par un cron externe, voir README.md).
 """
 import json, os, random, sys, time
@@ -15,6 +15,7 @@ import charts
 import guard as G
 import strategies as S
 import tracker as T
+import trend as TR
 
 APP_ID = os.getenv("DERIV_APP_ID", "1089")
 # 1) endpoint public Deriv (sans authentification), 2) ancien endpoint en secours.
@@ -28,10 +29,27 @@ UA = "Mozilla/5.0 (compatible; gold-bot/1.0)"
 TG_TOKEN = os.getenv("TELEGRAM_TOKEN")
 TG_CHAT = os.getenv("TELEGRAM_CHAT_ID")
 
-SYMBOL = "frxXAUUSD"
-NAME = "XAUUSD"
+GOLD = "frxXAUUSD"
+FOREX_MAJORS = ["frxEURUSD", "frxGBPUSD", "frxUSDJPY", "frxUSDCHF", "frxAUDUSD", "frxUSDCAD", "frxNZDUSD"]
+CRYPTOS = ["cryBTCUSD", "cryETHUSD"]
+ALL_SYMBOLS = [GOLD] + FOREX_MAJORS + CRYPTOS
+# Liste suivie : or + 7 majeures + BTC + ETH. SYMBOLS="frxXAUUSD,cryBTCUSD" (variable d'environnement) pour la restreindre.
+SYMBOLS = [x.strip() for x in os.getenv("SYMBOLS", "").split(",") if x.strip()] or ALL_SYMBOLS
+DECIMALS = {"frxXAUUSD": 2, "frxUSDJPY": 3, "cryBTCUSD": 2, "cryETHUSD": 2}   # les autres majeures : 5 décimales
 BOT = "OR"
-DEC = 2                                  # décimales de l'or
+
+
+def name_of(sym):
+    return sym[3:] if sym.startswith(("frx", "cry")) else sym
+
+
+def dec_of(sym):
+    return DECIMALS.get(sym, 5)
+
+
+def is_247(sym):
+    """Cryptos : marché ouvert 24h/24 et 7j/7, donc pas de filtre de session pour S3 et S4."""
+    return sym.startswith("cry")
 ENABLED = [x.strip().upper() for x in os.getenv("STRATEGIES", "S1,S2,S3,S4").split(",") if x.strip()]
 GRAN = S.GRAN
 COUNTS = {"M5": 300, "M15": 400}         # bougies téléchargées à chaque scan
@@ -163,25 +181,25 @@ def aggregate_ny(h1, hours):
     return list(out.values())
 
 
-def tf_candles(api, cache, tf):
+def tf_candles(api, cache, sym, tf):
     """Bougies d'un timeframe ; la dernière est en formation. M5 et M15 sont toujours rafraîchis."""
     if tf in ("H1", "H4", "D1"):
-        h1 = get_candles(api, cache, SYMBOL, GRAN["H1"], count=COUNT_H1)
+        h1 = get_candles(api, cache, sym, GRAN["H1"], count=COUNT_H1)
         if not h1 or tf == "H1":
             return h1
         return aggregate_ny(h1, 24 if tf == "D1" else 4)
-    return get_candles(api, cache, SYMBOL, GRAN[tf], force=True, count=COUNTS[tf])
+    return get_candles(api, cache, sym, GRAN[tf], force=True, count=COUNTS[tf])
 
 
 # --------------------------------------------------------------------------
 # Telegram
 # --------------------------------------------------------------------------
-def fmt(x):
-    return f"{x:.{DEC}f}"
+def fmt(x, dec):
+    return f"{x:.{dec}f}"
 
 
-def code(x):
-    return f"<code>{fmt(x)}</code>"
+def code(x, dec):
+    return f"<code>{fmt(x, dec)}</code>"
 
 
 def tg_api(method, payload=None, files=None):
@@ -261,9 +279,10 @@ def mgmt_line(sig):
 
 
 def gold_message(sig):
-    d, c = sig["dir"], code
+    d, dec = sig["dir"], sig["dec"]
+    c = lambda v: code(v, dec)
     tps = [("TP1", sig["tp1"]), ("TP2", sig["tp2"]), ("TP3", sig["tp3"])]
-    lines = [f"{'🟢' if d == 'BUY' else '🔴'} {d} · {NAME} · {sig['ltf']} · {sig['label']}",
+    lines = [f"{'🟢' if d == 'BUY' else '🔴'} {d} · {sig['name']} · {sig['ltf']} · {sig['label']}",
              f"Session : {sig['session']}", "",
              "────────────────", f"Prix actuel  {c(sig['entry'])}", "────────────────", "",
              f"Entrée  {c(sig['entry'])}  (au marché)", f"SL  {c(sig['sl'])}"]
@@ -271,14 +290,14 @@ def gold_message(sig):
     lines += [""] + sig["details"]
     if sig.get("inval") is not None and T.STRUCT_EXIT:
         lines.append(f"Invalidation  {c(sig['inval'])}  (clôture au-delà = sortie)")
-    extra = [x for x in (G.lot_line(SYMBOL, sig["entry"], sig["sl"]), mgmt_line(sig)) if x]
+    extra = [x for x in (G.lot_line(sig["sym"], sig["entry"], sig["sl"]), mgmt_line(sig)) if x]
     if extra:
         lines += [""] + extra
     return "\n".join(lines)
 
 
 def trade_event_message(t, e):
-    c = lambda v: code(v)
+    c = lambda v: code(v, t["dec"])
     head = f"{t['name']} · {t['ltf']} · {t['cascade']}" + (f" #{t['id']}" if t.get("id") else "")
     closed = t["status"] == "closed" and t.get("r") is not None
     res = f"\nRésultat  {t['r']:+.1f} R" if closed else ""
@@ -337,14 +356,14 @@ def track_trades(api, tr, now):
 def build_chart(sig, ltf_candles):
     lines = [{"y": sig["entry"], "label": "Entrée", "kind": "entry"}, {"y": sig["sl"], "label": "SL", "kind": "sl"}]
     lines += [{"y": sig[k], "label": k.upper(), "kind": "tp"} for k in ("tp1", "tp2", "tp3") if sig.get(k) is not None]
-    return {"title": f"{NAME} · {sig['dir']} · {sig['ltf']} · {sig['label']}", "dec": DEC,
+    return {"title": f"{sig['name']} · {sig['dir']} · {sig['ltf']} · {sig['label']}", "dec": sig["dec"],
             "candles": charts.candles_slice(ltf_candles), "lines": lines + sig["lines"], "zones": sig["zones"]}
 
 
 def emit_alert(sig, ltf_candles, tr, g, sent, funnel, now):
     """Filtres horaires, contrôles de risque, envoi (graphique + boutons Pris / Ignoré), enregistrement."""
     sent[sig["key"]] = int(now)   # un setup bloqué ou alerté n'est jamais réexaminé
-    ok, why = G.risk_check(tr, SYMBOL, sig["dir"], now, sig["label"])
+    ok, why = G.risk_check(tr, sig["sym"], sig["dir"], now, sig["label"])
     if not ok:
         if why == "dedupe":
             funnel["dedupe"] += 1
@@ -383,14 +402,15 @@ def emit_alert(sig, ltf_candles, tr, g, sent, funnel, now):
         notify(text, html=True, buttons=buttons)
     extra = dict(sig["extra"], session=sig["session"], id=tid)
     tr["active"][sig["key"]] = T.new_trade(
-        BOT, sig["key"], SYMBOL, NAME, sig["dir"], sig["otype"], sig["entry"], sig["sl"],
-        sig["tp1"], sig["tp2"], sig["tp3"], sig["ltf"], sig["gran"], DEC, sig["label"], now, TRADE_TTL,
+        BOT, sig["key"], sig["sym"], sig["name"], sig["dir"], sig["otype"], sig["entry"], sig["sl"],
+        sig["tp1"], sig["tp2"], sig["tp3"], sig["ltf"], sig["gran"], sig["dec"], sig["label"], now, TRADE_TTL,
         extra=extra, inval=sig["inval"], bar_secs=sig["gran"])
     return True
 
 
 HELP = ("Commandes :\n/pris N : le trade #N est pris\n/ignore N : le trade #N est ignoré\n"
-        "/r N X : ton résultat réel du trade #N, en R (ex. /r 12 -0.8)\n/bilan : bilan des 30 derniers jours")
+        "/r N X : ton résultat réel du trade #N, en R (ex. /r 12 -0.8)\n/bilan : bilan des 30 derniers jours\n"
+        "/tendance : récapitulatif de tendance (D1, H4, H1) à la demande")
 
 
 def _set_taken(tr, tid, taken):
@@ -442,6 +462,8 @@ def handle_update(u, g, tr, now):
             notify("Trade introuvable (trop ancien ?).")
     elif cmd == "/bilan":
         notify(T.stats_text(tr, now, days=30, groups=("cascade",)))
+    elif cmd == "/tendance":
+        g["recap_request"] = True      # envoyé pendant ce scan
     else:
         notify(HELP)
 
@@ -463,35 +485,89 @@ def poll_telegram(g, tr, now):
 
 
 # --------------------------------------------------------------------------
+# Récapitulatif de tendance (une fois par journée de trading, à partir de 17h15 New York)
+# --------------------------------------------------------------------------
+RECAP_DELAY = 15 * 60       # après la clôture 17h NY (passé le rollover)
+RECAP_STALE = 4 * 3600      # actif sans données récentes (marché fermé) : absent du récapitulatif
+
+
+def recap_due(g, now):
+    ds = T.day_start(now)
+    return now >= ds + RECAP_DELAY and g.get("recap_day") != ds
+
+
+def build_recap(api, cache, now):
+    """Texte du récapitulatif (une liste de blocs, un par actif) ; actifs fermés ou en erreur ignorés."""
+    blocks, closed = [], []
+    for sym in SYMBOLS:
+        try:
+            h1 = tf_candles(api, cache, sym, "H1")
+            if not h1 or now - h1[-1]["epoch"] > RECAP_STALE:
+                closed.append(name_of(sym))
+                continue
+            infos = {tf: TR.trend_info(tf_candles(api, cache, sym, tf) or []) for tf in TR.TIMEFRAMES}
+            blocks.append(TR.symbol_block(name_of(sym), infos, now, dec_of(sym)))
+        except Exception as ex:
+            print(f"Récap {name_of(sym)} ignoré : {str(ex)[:80]}")
+    return blocks, closed
+
+
+def send_recap(api, cache, now):
+    blocks, closed = build_recap(api, cache, now)
+    if not blocks:
+        return False
+    day = datetime.fromtimestamp(now, NY).strftime("%d/%m")
+    head = (f"📅 Récapitulatif de tendance · {day} (clôture 17h New York)\n"
+            "Âge = jambes consécutives (sommet + creux plus hauts, ou plus bas) : naissante 1 · établie 2-3 · mûre 4 et plus. "
+            "⚡ = cassure impulsive.")
+    chunk = head
+    for b in blocks:
+        if len(chunk) + len(b) + 2 > 3800:
+            notify(chunk)
+            chunk = ""
+        chunk += ("\n\n" if chunk else "") + b
+    if closed:
+        chunk += f"\n\nMarché fermé : {', '.join(closed)}"
+    notify(chunk)
+    return True
+
+
+# --------------------------------------------------------------------------
 # Scan
 # --------------------------------------------------------------------------
-def check_symbol(api):
-    """Journalise si l'or est absent chez Deriv (diagnostic uniquement)."""
+def check_symbols(api):
+    """Journalise les symboles absents chez Deriv (diagnostic uniquement)."""
     try:
         msg = api.request({"active_symbols": "brief"})
         names = {x.get("symbol") or x.get("underlying_symbol") for x in (msg or {}).get("active_symbols", [])}
         if names:
-            print(f"Symbole {SYMBOL} : {'disponible' if SYMBOL in names else 'ABSENT chez Deriv'}")
+            missing = [x for x in SYMBOLS if x not in names]
+            print(f"Symboles Deriv : {len(names)} dispo, absents de ma liste : {missing or 'aucun'}")
     except Exception as e:
-        print(f"check_symbol ignoré: {e}")
+        print(f"check_symbols ignoré: {e}")
 
 
-def scan(provide, now, sent, funnel, news=()):
-    """Évalue les stratégies actives. Retourne [(signal, bougies de l'unité d'entrée)] non encore envoyés.
+def scan(sym, provide, now, sent, funnel, news=()):
+    """Évalue les stratégies actives sur un actif. Retourne [(signal, bougies de l'unité d'entrée)] non encore envoyés.
     Utilisé par le bot en direct et par le backtest."""
     m5 = provide("M5")
     if not m5 or now - m5[-1]["epoch"] > STALE_DATA:
         return []                      # données absentes ou marché fermé
     funnel["data"] += 1
     out = []
-    for sig in S.scan_all(provide, now, funnel, only=ENABLED):
+    dec = dec_of(sym)
+    for sig in S.scan_all(provide, now, funnel, only=ENABLED, dec=dec, kz=not is_247(sym)):
+        sig.update(sym=sym, name=name_of(sym), dec=dec, key=f"{sym}|{sig['key']}")
         if sig["key"] in sent:
             continue
-        why = G.blackout(SYMBOL, now, news)
+        tl, te = TR.alert_lines(sig["dir"], {tf: TR.trend_info(provide(tf) or []) for tf in TR.ALERT_TFS}, now)
+        sig["details"] = sig["details"] + tl
+        sig["extra"] = dict(sig["extra"], **te)
+        why = G.blackout(sym, now, news)
         if why:
             funnel["blackout"] += 1
             sent[sig["key"]] = int(now)
-            print(f"Alerte bloquée {sig['label']} {sig['dir']} : {why}")
+            print(f"Alerte bloquée {sig['name']} {sig['label']} {sig['dir']} : {why}")
             continue
         out.append((sig, provide(sig["ltf"])))
     return out
@@ -515,16 +591,28 @@ def main():
         G.health_start(g, BOT, now, notify)
         G.fomc_check(g, now, notify)
         poll_telegram(g, tr, now)
-        check_symbol(api)
+        check_symbols(api)
         track_trades(api, tr, now)
-        memo = {}
+        manual = g.pop("recap_request", False)
+        if manual or recap_due(g, now):
+            try:
+                sent_ok = send_recap(api, cache, now)
+                if sent_ok and not manual:
+                    g["recap_day"] = T.day_start(now)
+            except Exception as ex:      # le récapitulatif ne doit jamais bloquer le scan
+                print(f"Récapitulatif ignoré : {str(ex)[:100]}")
+        for sym in SYMBOLS:
+            memo = {}
 
-        def provide(tf, force=False):          # un seul téléchargement par timeframe et par scan
-            if tf not in memo:
-                memo[tf] = tf_candles(api, cache, tf)
-            return memo[tf]
-        for sig, ltf in scan(provide, now, state, funnel, news):
-            emit_alert(sig, ltf, tr, g, state, funnel, now)
+            def provide(tf, force=False, _s=sym, _m=memo):   # un seul téléchargement par timeframe et par scan
+                if tf not in _m:
+                    _m[tf] = tf_candles(api, cache, _s, tf)
+                return _m[tf]
+            try:
+                for sig, ltf in scan(sym, provide, now, state, funnel, news):
+                    emit_alert(sig, ltf, tr, g, state, funnel, now)
+            except Exception as ex:      # un actif en échec ne doit pas bloquer les autres
+                print(f"{name_of(sym)} ignoré : {str(ex)[:100]}")
         G.health_end(g, BOT, funnel["data"] > 0, now, notify)
         G.funnel_add(g, BOT, funnel)
         if not g["last_report"]:
@@ -533,9 +621,9 @@ def main():
             notify(G.build_report(g, tr, now))
             G.report_sent(g, now)
         if os.getenv("NOTIFY_OK") == "1":
-            notify(f"Bot or OK : {funnel['alert']} alerte(s). Stratégies actives : {', '.join(ENABLED)}.\n"
+            notify(f"Bot OK : {len(SYMBOLS)} actifs, {funnel['alert']} alerte(s). Stratégies actives : {', '.join(ENABLED)}.\n"
                    f"Entonnoir : {G.funnel_text(funnel)}\n{T.stats_text(tr, now, groups=('cascade',))}")
-        print(f"Scan terminé : {funnel['alert']} alerte(s). Entonnoir : {G.funnel_text(funnel)}")
+        print(f"Scan terminé : {len(SYMBOLS)} actifs, {funnel['alert']} alerte(s). Entonnoir : {G.funnel_text(funnel)}")
     finally:
         api.close()
         cut = time.time() - 7 * 86400
