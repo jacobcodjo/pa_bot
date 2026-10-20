@@ -252,8 +252,8 @@
       "take_profit_2": 82157.5,
       "risk_reward_1": 2.16,
       "alert_epoch": 1792490400,
-      "filled": false,
-      "fill_epoch": null
+      "filled": true,
+      "fill_epoch": 1792494900
     }
   },
   "history": [
