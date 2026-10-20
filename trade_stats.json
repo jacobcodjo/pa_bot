@@ -237,8 +237,8 @@
       "take_profit_2": 56.65,
       "risk_reward_1": 1.73,
       "alert_epoch": 1792458000,
-      "filled": false,
-      "fill_epoch": null
+      "filled": true,
+      "fill_epoch": 1792461600
     },
     "CRT_XRPUSDT_M15_1792458000_1792465200": {
       "symbol": "XRPUSDT",
