@@ -254,21 +254,6 @@
       "alert_epoch": 1792162800,
       "filled": false,
       "fill_epoch": null
-    },
-    "Impulse_LTCUSDT_H1_1791997200_1792029600": {
-      "symbol": "LTCUSDT",
-      "strategy": "Impulse",
-      "direction": "bearish",
-      "order_type": "Sell Limit",
-      "trigger_tf": "M15",
-      "entry": 59.158240000000006,
-      "stop_loss": 60.049989999999994,
-      "take_profit_1": 56.41568,
-      "take_profit_2": 55.443419999999996,
-      "risk_reward_1": 3.08,
-      "alert_epoch": 1792351800,
-      "filled": false,
-      "fill_epoch": null
     }
   },
   "history": [
@@ -802,6 +787,15 @@
       "risk_reward": 1.25,
       "result": "SL",
       "resolved_epoch": 1792480500
+    },
+    {
+      "symbol": "LTCUSDT",
+      "strategy": "Impulse",
+      "direction": "bearish",
+      "order_type": "Sell Limit",
+      "risk_reward": 3.08,
+      "result": "SL",
+      "resolved_epoch": 1792393200
     }
   ]
 }
