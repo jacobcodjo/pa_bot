@@ -207,8 +207,8 @@
       "take_profit_2": 56.65,
       "risk_reward_1": 1.31,
       "alert_epoch": 1792454400,
-      "filled": false,
-      "fill_epoch": null
+      "filled": true,
+      "fill_epoch": 1792458000
     },
     "CRT_XRPUSDT_H4_1792281600_1792411200": {
       "symbol": "XRPUSDT",
@@ -222,8 +222,8 @@
       "take_profit_2": 1.25477,
       "risk_reward_1": 1.48,
       "alert_epoch": 1792454400,
-      "filled": false,
-      "fill_epoch": null
+      "filled": true,
+      "fill_epoch": 1792458000
     },
     "CRT_LTCUSDT_H4_1792281600_1792396800": {
       "symbol": "LTCUSDT",
