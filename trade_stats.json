@@ -134,6 +134,51 @@
       "alert_epoch": 1792162800,
       "filled": true,
       "fill_epoch": 1792505700
+    },
+    "CRT_BTCUSDT_H4_1792368000_1792454400": {
+      "symbol": "BTCUSDT",
+      "strategy": "CRT",
+      "direction": "bullish",
+      "order_type": "Buy Limit",
+      "trigger_tf": "H1",
+      "entry": 81543.6,
+      "stop_loss": 81059.15015,
+      "take_profit_1": 82374.2,
+      "take_profit_2": 83100.0,
+      "risk_reward_1": 1.71,
+      "alert_epoch": 1792504800,
+      "filled": false,
+      "fill_epoch": null
+    },
+    "CRT_LTCUSDT_H4_1792368000_1792454400": {
+      "symbol": "LTCUSDT",
+      "strategy": "CRT",
+      "direction": "bullish",
+      "order_type": "Buy Limit",
+      "trigger_tf": "H1",
+      "entry": 58.98,
+      "stop_loss": 58.7706,
+      "take_profit_1": 59.69499999999999,
+      "take_profit_2": 60.41,
+      "risk_reward_1": 3.41,
+      "alert_epoch": 1792504800,
+      "filled": false,
+      "fill_epoch": null
+    },
+    "CRT_XRPUSDT_H4_1792368000_1792483200": {
+      "symbol": "XRPUSDT",
+      "strategy": "CRT",
+      "direction": "bullish",
+      "order_type": "Buy Limit",
+      "trigger_tf": "H1",
+      "entry": 1.2948,
+      "stop_loss": 1.287925715,
+      "take_profit_1": 1.306705,
+      "take_profit_2": 1.32128,
+      "risk_reward_1": 1.73,
+      "alert_epoch": 1792501200,
+      "filled": false,
+      "fill_epoch": null
     }
   },
   "history": [
