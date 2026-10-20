@@ -150,36 +150,6 @@
       "filled": false,
       "fill_epoch": null
     },
-    "CRT_LTCUSDT_H4_1792281600_1792425600": {
-      "symbol": "LTCUSDT",
-      "strategy": "CRT",
-      "direction": "bearish",
-      "order_type": "Sell Limit",
-      "trigger_tf": "H1",
-      "entry": 59.53,
-      "stop_loss": 60.26011499999999,
-      "take_profit_1": 58.335,
-      "take_profit_2": 56.65,
-      "risk_reward_1": 1.64,
-      "alert_epoch": 1792443600,
-      "filled": true,
-      "fill_epoch": 1792447200
-    },
-    "CRT_LTCUSDT_H4_1792281600_1792411200": {
-      "symbol": "LTCUSDT",
-      "strategy": "CRT",
-      "direction": "bearish",
-      "order_type": "Sell Limit",
-      "trigger_tf": "H1",
-      "entry": 59.53,
-      "stop_loss": 60.44020499999999,
-      "take_profit_1": 58.335,
-      "take_profit_2": 56.65,
-      "risk_reward_1": 1.31,
-      "alert_epoch": 1792454400,
-      "filled": true,
-      "fill_epoch": 1792458000
-    },
     "CRT_XRPUSDT_H4_1792281600_1792411200": {
       "symbol": "XRPUSDT",
       "strategy": "CRT",
@@ -194,21 +164,6 @@
       "alert_epoch": 1792454400,
       "filled": true,
       "fill_epoch": 1792458000
-    },
-    "CRT_LTCUSDT_H4_1792281600_1792396800": {
-      "symbol": "LTCUSDT",
-      "strategy": "CRT",
-      "direction": "bearish",
-      "order_type": "Sell Limit",
-      "trigger_tf": "H1",
-      "entry": 59.53,
-      "stop_loss": 60.22009499999999,
-      "take_profit_1": 58.335,
-      "take_profit_2": 56.65,
-      "risk_reward_1": 1.73,
-      "alert_epoch": 1792458000,
-      "filled": true,
-      "fill_epoch": 1792461600
     },
     "CRT_XAU_USD_H1_1792454400_1792468800": {
       "symbol": "XAU_USD",
@@ -823,6 +778,33 @@
       "risk_reward": 1.64,
       "result": "SL",
       "resolved_epoch": 1792492800
+    },
+    {
+      "symbol": "LTCUSDT",
+      "strategy": "CRT",
+      "direction": "bearish",
+      "order_type": "Sell Limit",
+      "risk_reward": 1.64,
+      "result": "TP",
+      "resolved_epoch": 1792494000
+    },
+    {
+      "symbol": "LTCUSDT",
+      "strategy": "CRT",
+      "direction": "bearish",
+      "order_type": "Sell Limit",
+      "risk_reward": 1.31,
+      "result": "TP",
+      "resolved_epoch": 1792494000
+    },
+    {
+      "symbol": "LTCUSDT",
+      "strategy": "CRT",
+      "direction": "bearish",
+      "order_type": "Sell Limit",
+      "risk_reward": 1.73,
+      "result": "TP",
+      "resolved_epoch": 1792494000
     }
   ]
 }
