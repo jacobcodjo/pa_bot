@@ -177,8 +177,8 @@
       "take_profit_2": 4115.56507,
       "risk_reward_1": 1.28,
       "alert_epoch": 1792475100,
-      "filled": false,
-      "fill_epoch": null
+      "filled": true,
+      "fill_epoch": 1792505700
     },
     "Impulse_LTCUSDT_H1_1791964800_1791986400": {
       "symbol": "LTCUSDT",
@@ -192,8 +192,8 @@
       "take_profit_2": 56.474639999999994,
       "risk_reward_1": 3.11,
       "alert_epoch": 1792162800,
-      "filled": false,
-      "fill_epoch": null
+      "filled": true,
+      "fill_epoch": 1792505700
     }
   },
   "history": [
