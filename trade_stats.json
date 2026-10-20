@@ -177,8 +177,8 @@
       "take_profit_2": 1.29357,
       "risk_reward_1": 1.71,
       "alert_epoch": 1792454400,
-      "filled": false,
-      "fill_epoch": null
+      "filled": true,
+      "fill_epoch": 1792464300
     },
     "CRT_ETHUSDT_H1_1792425600_1792443600": {
       "symbol": "ETHUSDT",
