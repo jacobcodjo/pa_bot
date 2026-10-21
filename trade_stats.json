@@ -179,6 +179,21 @@
       "alert_epoch": 1792566900,
       "filled": false,
       "fill_epoch": null
+    },
+    "CRT_BTCUSDT_M15_1792580400_1792586700": {
+      "symbol": "BTCUSDT",
+      "strategy": "CRT",
+      "direction": "bearish",
+      "order_type": "Sell Limit",
+      "trigger_tf": "M5",
+      "entry": 83639.1,
+      "stop_loss": 83561.76,
+      "take_profit_1": 83372.95000000001,
+      "take_profit_2": 83259.8,
+      "risk_reward_1": 3.44,
+      "alert_epoch": 1792589400,
+      "filled": false,
+      "fill_epoch": null
     }
   },
   "history": [
