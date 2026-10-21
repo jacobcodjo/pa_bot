@@ -72,8 +72,8 @@
       "take_profit_2": 2350.0111399999996,
       "risk_reward_1": 3.05,
       "alert_epoch": 1792163700,
-      "filled": false,
-      "fill_epoch": null
+      "filled": true,
+      "fill_epoch": 1792587600
     },
     "Impulse_XRPUSDT_H1_1791964800_1791979200": {
       "symbol": "XRPUSDT",
